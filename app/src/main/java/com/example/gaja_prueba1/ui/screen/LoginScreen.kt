@@ -29,12 +29,18 @@ fun LoginScreen(viewModel: LoginViewModel = viewModel()){
     val password by viewModel.password.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val loginMessage by viewModel.loginMessage.collectAsState()
+    val isError by viewModel.isError.collectAsState()
+    val emailError by viewModel.emailError.collectAsState()
+    val passwordError by viewModel.passwordError.collectAsState()
 
     LoginScreen(
         email = email,
         password = password,
         isLoading = isLoading,
         loginMessage = loginMessage,
+        isError = isError,
+        emailError = emailError,
+        passwordError = passwordError,
         onEmailChange = { viewModel.onEmailChange(it) },
         onPasswordChange = { viewModel.onPasswordChange(it) },
         onLoginClick = { viewModel.onLoginClick() }
@@ -48,6 +54,9 @@ fun LoginScreen(
     password: String,
     isLoading: Boolean,
     loginMessage: String,
+    isError: Boolean,
+    emailError: String?,
+    passwordError: String?,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onLoginClick: () -> Unit
@@ -68,14 +77,19 @@ fun LoginScreen(
             value = email,
             onValueChange = onEmailChange,
             label = { Text("Correo electrónico") },
+            isError = emailError != null,
+            supportingText = { emailError?.let { Text(it) } },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
+
         OutlinedTextField(
             value = password,
             onValueChange = onPasswordChange,
             label = { Text("Contraseña") },
             visualTransformation = PasswordVisualTransformation(),
+            isError = passwordError != null,
+            supportingText = { passwordError?.let { Text(it) } },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -94,6 +108,14 @@ fun LoginScreen(
             }
         }
 
+        if (loginMessage.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = loginMessage,
+                color = if (isError) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.primary
+            )
+        }
     }
 }
 
@@ -105,6 +127,9 @@ fun LoginScreenPreview() {
         password = "",
         isLoading = false,
         loginMessage = "",
+        isError = false,
+        emailError = null,
+        passwordError = null,
         onEmailChange = {},
         onPasswordChange = {},
         onLoginClick = {}

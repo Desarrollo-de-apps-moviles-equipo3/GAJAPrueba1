@@ -32,12 +32,19 @@ import com.example.gaja_prueba1.ui.components.GajaSelector
 import com.example.gaja_prueba1.ui.components.GajaTextField
 import com.example.gaja_prueba1.ui.theme.EspaciosPalette
 import com.example.gaja_prueba1.ui.theme.GAJAPrueba1Theme
+import androidx.compose.foundation.layout.Row
+import com.example.gaja_prueba1.ui.components.GajaCard
+import com.example.gaja_prueba1.ui.components.GajaChipTone
+import com.example.gaja_prueba1.ui.components.GajaFilterChip
+import com.example.gaja_prueba1.ui.components.GajaStatCard
+import com.example.gaja_prueba1.ui.components.GajaStatusChip
 
 @Composable
 fun ComponentsShowcaseScreen(modifier: Modifier = Modifier) {
     var role by rememberSaveable { mutableStateOf(0) }
     var user by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
+    var filter by rememberSaveable { mutableStateOf(0) }
 
     Column(
         modifier = modifier
@@ -111,6 +118,56 @@ fun ComponentsShowcaseScreen(modifier: Modifier = Modifier) {
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )
+
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = "Chips de estado",
+            style = MaterialTheme.typography.titleMedium,
+            color = EspaciosPalette.Navy
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            GajaStatusChip(text = "Confirmada", tone = GajaChipTone.Success)
+            GajaStatusChip(text = "Pendiente", tone = GajaChipTone.Info)
+            GajaStatusChip(text = "Rechazada", tone = GajaChipTone.Danger)
+        }
+
+        Text(
+            text = "Chips de filtro",
+            style = MaterialTheme.typography.titleMedium,
+            color = EspaciosPalette.Navy
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("Todas", "Fútbol", "Tenis").forEachIndexed { index, name ->
+                GajaFilterChip(
+                    text = name,
+                    selected = filter == index,
+                    onClick = { filter = index }
+                )
+            }
+        }
+
+        Text(
+            text = "Tarjetas",
+            style = MaterialTheme.typography.titleMedium,
+            color = EspaciosPalette.Navy
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            GajaStatCard(value = "3", label = "Pendientes", modifier = Modifier.weight(1f), highlight = true)
+            GajaStatCard(value = "5", label = "Próximas", modifier = Modifier.weight(1f))
+            GajaStatCard(value = "12", label = "Pasadas", modifier = Modifier.weight(1f))
+        }
+        GajaCard(modifier = Modifier.fillMaxWidth(), onClick = { }) {
+            Text(
+                text = "Cancha de Fútbol A",
+                style = MaterialTheme.typography.titleMedium,
+                color = EspaciosPalette.Navy
+            )
+            Text(
+                text = "Hoy · 16:00 - 18:00",
+                style = MaterialTheme.typography.bodyMedium,
+                color = EspaciosPalette.Steel
+            )
+        }
     }
 }
 

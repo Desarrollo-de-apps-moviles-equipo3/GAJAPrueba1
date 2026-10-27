@@ -38,6 +38,10 @@ class LoginViewModel : ViewModel() {
     val passwordError: StateFlow<String?> = _passwordError.asStateFlow()
     val loginMessage: StateFlow<String> = _loginMessage.asStateFlow()
 
+    // NUEVO: guarda el correo del usuario cuando el login sale bien
+    private val _loggedUser = MutableStateFlow<String?>(null)
+    val loggedUser: StateFlow<String?> = _loggedUser.asStateFlow()
+
 
     fun onEmailChange(email: String) {
         _email.value = email
@@ -69,6 +73,7 @@ class LoginViewModel : ViewModel() {
                 is LoginResult.Success -> {
                     _loginMessage.value = "BIENVENIDO!!"
                     _isError.value = false
+                    _loggedUser.value = _email.value.trim()   // NUEVO: avisa que entró
                 }
 
                 is LoginResult.Error -> {

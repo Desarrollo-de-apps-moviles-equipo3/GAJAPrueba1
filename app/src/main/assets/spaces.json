@@ -1,0 +1,62 @@
+[
+  {
+    "id": "futbol-a",
+    "name": "Cancha de Fútbol A",
+    "category": "Deportes",
+    "description": "Cancha de fútbol 7 de pasto sintético para entrenamientos y partidos.",
+    "capacity": 14,
+    "available": true,
+    "colorHex": "#2F6B4F",
+    "tags": ["Fútbol"]
+  },
+  {
+    "id": "futbol-b",
+    "name": "Cancha de Fútbol B",
+    "category": "Deportes",
+    "description": "Cancha de fútbol 7 para entrenamientos y partidos entre compañías.",
+    "capacity": 14,
+    "available": false,
+    "colorHex": "#2F6B4F",
+    "tags": ["Fútbol"]
+  },
+  {
+    "id": "tenis-c",
+    "name": "Cancha de Tenis C",
+    "category": "Deportes",
+    "description": "Cancha de tenis de cemento, ideal para clases y práctica libre.",
+    "capacity": 4,
+    "available": true,
+    "colorHex": "#3B6989",
+    "tags": ["Tenis"]
+  },
+  {
+    "id": "multiusos-a",
+    "name": "Cancha Multiusos A",
+    "category": "Deportes",
+    "description": "Cancha multiusos para básquetbol, voleibol y actividades físicas grupales.",
+    "capacity": 30,
+    "available": true,
+    "colorHex": "#B7791F",
+    "tags": ["Básquetbol", "Voleibol"]
+  },
+  {
+    "id": "gimnasio-1",
+    "name": "Gimnasio 1 ",
+    "category": "Recintos",
+    "description": "Espacio de ejemplo para probar categorías distintas a Deportes.",
+    "capacity": 40,
+    "available": true,
+    "colorHex": "#718797",
+    "tags": ["Gimnasio"]
+  },
+  {
+    "id": "tenis-a",
+    "name": "Cancha de Tenis A",
+    "category": "Deportes",
+    "description": "Cancha de tenis de cemento, ideal para clases y práctica libre.",
+    "capacity": 4,
+    "available": true,
+    "colorHex": "#3B6989",
+    "tags": ["Tenis"]
+  }
+]

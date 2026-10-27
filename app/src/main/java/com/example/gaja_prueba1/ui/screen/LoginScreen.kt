@@ -18,6 +18,7 @@ import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,7 +37,14 @@ import com.example.gaja_prueba1.ui.theme.GAJAPrueba1Theme
 import com.example.gaja_prueba1.ui.viewmodels.LoginViewModel
 
 @Composable
-fun LoginScreen(viewModel: LoginViewModel = viewModel()) {
+fun LoginScreen(
+    onLoginSuccess: (String) -> Unit = {},
+    viewModel: LoginViewModel = viewModel()
+) {
+    val loggedUser by viewModel.loggedUser.collectAsState()
+    LaunchedEffect(loggedUser) {
+        loggedUser?.let(onLoginSuccess)
+    }
     val email by viewModel.email.collectAsState()
     val password by viewModel.password.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()

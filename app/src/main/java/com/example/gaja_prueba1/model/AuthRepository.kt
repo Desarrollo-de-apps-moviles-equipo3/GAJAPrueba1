@@ -11,7 +11,7 @@ class AuthRepository {
 
         try {
             delay(2000)
-            if(email == "profe_exe@duoc.cl" && password == "1234")
+            if(email == "profe_exe@duoc.cl" && password == "12345")
                 LoginResult.Success(token = "fake-jwt-123", userId = "user01")
             else
                 LoginResult.Error(Exception("Invalid credentials"))

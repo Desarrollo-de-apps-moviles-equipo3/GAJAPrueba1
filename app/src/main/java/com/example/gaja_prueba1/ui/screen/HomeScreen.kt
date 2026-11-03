@@ -36,7 +36,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -46,8 +45,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
@@ -74,11 +71,18 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gaja_prueba1.model.Space
 import com.example.gaja_prueba1.model.formatDistance
-import com.example.gaja_prueba1.ui.theme.EspaciosPalette
 import com.example.gaja_prueba1.ui.viewmodels.HomeUiState
 import com.example.gaja_prueba1.ui.viewmodels.HomeViewModel
 import com.example.gaja_prueba1.ui.viewmodels.NearbyState
 import com.example.gaja_prueba1.util.NearbyLocationProvider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.lerp
+import com.example.gaja_prueba1.ui.components.GajaCard
+import com.example.gaja_prueba1.ui.components.GajaChipTone
+import com.example.gaja_prueba1.ui.components.GajaStatCard
+import com.example.gaja_prueba1.ui.components.GajaStatusChip
+import com.example.gaja_prueba1.ui.theme.GAJAPrueba1Theme
+import androidx.compose.material3.LocalContentColor
 
 @Composable
 fun HomeScreen(
@@ -143,10 +147,13 @@ fun HomeContent(
     onNearbyClear: () -> Unit = {},
     onOpenSettings: () -> Unit = {}
 ) {
+    val scheme = MaterialTheme.colorScheme
+    val gradientTop = lerp(scheme.primary, scheme.secondary, 0.2f)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(EspaciosPalette.NavyTop, EspaciosPalette.Navy)))
+            .background(Brush.verticalGradient(listOf(gradientTop, scheme.primary)))
             .statusBarsPadding()
             .verticalScroll(rememberScrollState())
     ) {
@@ -154,16 +161,14 @@ fun HomeContent(
 
         Text(
             text = "Hola, $userName",
-            color = EspaciosPalette.White,
-            fontSize = 26.sp,
-            fontWeight = FontWeight.SemiBold,
+            color = scheme.onPrimary,
+            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold),
             modifier = Modifier.padding(horizontal = 24.dp)
         )
         Text(
             text = "Agenda tu cancha",
-            color = EspaciosPalette.White.copy(alpha = 0.7f),
-            fontSize = 15.sp,
-            lineHeight = 21.sp,
+            color = scheme.onPrimary.copy(alpha = 0.7f),
+            style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 6.dp)
         )
 
@@ -204,19 +209,12 @@ fun HomeContent(
             placeholder = { Text("Buscar cancha o deporte") },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             singleLine = true,
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.medium,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = EspaciosPalette.White,
-                unfocusedContainerColor = EspaciosPalette.White,
-                focusedBorderColor = EspaciosPalette.Orange,
-                unfocusedBorderColor = EspaciosPalette.Beige,
-                focusedTextColor = EspaciosPalette.Navy,
-                unfocusedTextColor = EspaciosPalette.Navy,
-                cursorColor = EspaciosPalette.Navy,
-                focusedPlaceholderColor = EspaciosPalette.Slate,
-                unfocusedPlaceholderColor = EspaciosPalette.Slate,
-                focusedLeadingIconColor = EspaciosPalette.Slate,
-                unfocusedLeadingIconColor = EspaciosPalette.Slate
+                focusedContainerColor = scheme.surfaceContainerLowest,
+                unfocusedContainerColor = scheme.surfaceContainerLowest,
+                focusedBorderColor = scheme.tertiary,
+                unfocusedBorderColor = scheme.outlineVariant
             )
         )
 
@@ -233,9 +231,8 @@ fun HomeContent(
 
         Text(
             text = "Espacios",
-            color = EspaciosPalette.White,
-            fontSize = 17.sp,
-            fontWeight = FontWeight.SemiBold,
+            color = scheme.onPrimary,
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
             modifier = Modifier.padding(horizontal = 24.dp)
         )
         Spacer(Modifier.height(12.dp))
@@ -248,7 +245,7 @@ fun HomeContent(
                         .height(220.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = EspaciosPalette.White)
+                    CircularProgressIndicator(color = scheme.onPrimary)
                 }
             }
 
@@ -290,6 +287,7 @@ fun HomeContent(
 
 @Composable
 private fun HomeHeader() {
+    val onPrimary = MaterialTheme.colorScheme.onPrimary
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -301,7 +299,7 @@ private fun HomeHeader() {
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .border(1.dp, EspaciosPalette.White.copy(alpha = 0.5f), CircleShape),
+                    .border(1.dp, onPrimary.copy(alpha = 0.5f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -314,16 +312,17 @@ private fun HomeHeader() {
             Spacer(Modifier.width(16.dp))
             Text(
                 text = "ESCUELA MILITAR",
-                color = EspaciosPalette.White,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.5.sp
+                color = onPrimary,
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 0.5.sp
+                )
             )
         }
         Icon(
             imageVector = Icons.Filled.Notifications,
             contentDescription = "Notificaciones",
-            tint = EspaciosPalette.White,
+            tint = onPrimary,
             modifier = Modifier.size(24.dp)
         )
     }
@@ -341,27 +340,12 @@ private fun CounterCard(
         animationSpec = tween(durationMillis = 700),
         label = "counter"
     )
-    Column(
-        modifier = modifier
-            .background(EspaciosPalette.SkyCard, RoundedCornerShape(16.dp))
-            .padding(vertical = 14.dp, horizontal = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = if (value == null) "–" else animated.toString(),
-            color = if (highlight) EspaciosPalette.Green else EspaciosPalette.Navy,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = label,
-            color = if (highlight) EspaciosPalette.Green else EspaciosPalette.Navy,
-            fontSize = 11.sp,
-            lineHeight = 14.sp,
-            textAlign = TextAlign.Center
-        )
-    }
+    GajaStatCard(
+        value = if (value == null) "–" else animated.toString(),
+        label = label,
+        modifier = modifier,
+        highlight = highlight
+    )
 }
 
 @Composable
@@ -371,31 +355,32 @@ private fun NearbyControls(
     onNearbyClear: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
+    val scheme = MaterialTheme.colorScheme
     Column(modifier = Modifier.padding(horizontal = 24.dp)) {
         if (nearby == NearbyState.Active) {
             OutlinedButton(
                 onClick = onNearbyClear,
-                shape = RoundedCornerShape(999.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = EspaciosPalette.White)
+                shape = CircleShape,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = scheme.onPrimary)
             ) {
                 Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("Quitar orden por cercanía", fontSize = 13.sp)
+                Text("Quitar orden por cercanía", style = MaterialTheme.typography.labelLarge)
             }
         } else {
             Button(
                 onClick = onNearbyClick,
                 enabled = nearby != NearbyState.Locating,
-                shape = RoundedCornerShape(999.dp),
+                shape = CircleShape,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = EspaciosPalette.Orange,
-                    contentColor = EspaciosPalette.White
+                    containerColor = scheme.tertiary,
+                    contentColor = scheme.onTertiary
                 )
             ) {
                 if (nearby == NearbyState.Locating) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(18.dp),
-                        color = EspaciosPalette.White,
+                        color = LocalContentColor.current,
                         strokeWidth = 2.dp
                     )
                 } else {
@@ -403,9 +388,8 @@ private fun NearbyControls(
                 }
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    if (nearby == NearbyState.Locating) "Buscando…" else "Cerca de mí",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold
+                    text = if (nearby == NearbyState.Locating) "Buscando…" else "Cerca de mí",
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
                 )
             }
         }
@@ -419,14 +403,17 @@ private fun NearbyControls(
             Column(modifier = Modifier.padding(top = 8.dp)) {
                 Text(
                     text = message.orEmpty(),
-                    color = if (nearby == NearbyState.Active) EspaciosPalette.White.copy(alpha = 0.85f)
-                    else Color(0xFFFFB4A8),
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp
+                    color = if (nearby == NearbyState.Active) scheme.onPrimary.copy(alpha = 0.85f)
+                    else scheme.errorContainer,
+                    style = MaterialTheme.typography.bodyMedium
                 )
                 if (nearby == NearbyState.PermissionBlocked) {
                     TextButton(onClick = onOpenSettings) {
-                        Text("Abrir ajustes", color = EspaciosPalette.Orange, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            text = "Abrir ajustes",
+                            color = scheme.tertiary,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             }
@@ -452,14 +439,13 @@ private fun SpaceCard(
     modifier: Modifier = Modifier,
     distanceText: String? = null
 ) {
-    val baseColor = colorFromHex(space.colorHex)
-    Card(
+    val scheme = MaterialTheme.colorScheme
+    val baseColor = colorFromHex(space.colorHex, fallback = scheme.secondary)
+
+    GajaCard(
         modifier = modifier
             .width(260.dp)
-            .animateContentSize(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = EspaciosPalette.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            .animateContentSize()
     ) {
         Box(
             modifier = Modifier
@@ -467,18 +453,16 @@ private fun SpaceCard(
                 .height(120.dp)
                 .background(Brush.verticalGradient(listOf(baseColor, baseColor.copy(alpha = 0.65f))))
         ) {
-            StatusChip(
+            GajaStatusChip(
                 text = if (space.available) "Disponible" else "No disponible",
-                background = if (space.available) EspaciosPalette.GreenSoft else EspaciosPalette.DangerSoft,
-                content = if (space.available) EspaciosPalette.Green else EspaciosPalette.Danger,
+                tone = if (space.available) GajaChipTone.Success else GajaChipTone.Danger,
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(10.dp)
             )
-            StatusChip(
+            GajaStatusChip(
                 text = space.category,
-                background = EspaciosPalette.SkyCard,
-                content = EspaciosPalette.Navy,
+                tone = GajaChipTone.Info,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(10.dp)
@@ -487,18 +471,16 @@ private fun SpaceCard(
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
                 text = space.name,
-                color = EspaciosPalette.Navy,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
+                color = scheme.onSurface,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Spacer(Modifier.height(6.dp))
             Text(
                 text = space.description,
-                color = EspaciosPalette.Slate,
-                fontSize = 12.sp,
-                lineHeight = 17.sp,
+                color = scheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
@@ -513,21 +495,20 @@ private fun SpaceCard(
                         append("Hasta ${space.capacity} personas")
                         if (distanceText != null) append(" · $distanceText")
                     },
-                    color = EspaciosPalette.Slate,
-                    fontSize = 12.sp
+                    color = scheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
                 )
                 Button(
                     onClick = onReserveClick,
                     enabled = space.available,
                     modifier = Modifier.height(36.dp),
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = EspaciosPalette.Navy,
-                        contentColor = EspaciosPalette.White
-                    )
+                    shape = MaterialTheme.shapes.small
                 ) {
-                    Text("Reservar", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        text = "Reservar",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                    )
                 }
             }
         }
@@ -535,20 +516,8 @@ private fun SpaceCard(
 }
 
 @Composable
-private fun StatusChip(text: String, background: Color, content: Color, modifier: Modifier = Modifier) {
-    Text(
-        text = text,
-        color = content,
-        fontSize = 11.sp,
-        fontWeight = FontWeight.Medium,
-        modifier = modifier
-            .background(background, RoundedCornerShape(999.dp))
-            .padding(horizontal = 10.dp, vertical = 4.dp)
-    )
-}
-
-@Composable
 private fun MessageBlock(text: String, actionLabel: String? = null, onAction: () -> Unit = {}) {
+    val scheme = MaterialTheme.colorScheme
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -557,8 +526,8 @@ private fun MessageBlock(text: String, actionLabel: String? = null, onAction: ()
     ) {
         Text(
             text = text,
-            color = EspaciosPalette.White.copy(alpha = 0.85f),
-            fontSize = 14.sp,
+            color = scheme.onPrimary.copy(alpha = 0.85f),
+            style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center
         )
         if (actionLabel != null) {
@@ -566,8 +535,8 @@ private fun MessageBlock(text: String, actionLabel: String? = null, onAction: ()
             Button(
                 onClick = onAction,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = EspaciosPalette.Orange,
-                    contentColor = EspaciosPalette.White
+                    containerColor = scheme.tertiary,
+                    contentColor = scheme.onTertiary
                 )
             ) {
                 Text(actionLabel)
@@ -576,11 +545,11 @@ private fun MessageBlock(text: String, actionLabel: String? = null, onAction: ()
     }
 }
 
-private fun colorFromHex(hex: String): Color =
+private fun colorFromHex(hex: String, fallback: Color): Color =
     try {
         Color(android.graphics.Color.parseColor(hex))
     } catch (e: IllegalArgumentException) {
-        EspaciosPalette.Steel
+        fallback
     }
 
 private val previewSpaces = listOf(
@@ -598,44 +567,54 @@ private val previewSpaces = listOf(
 @Preview(showBackground = true, widthDp = 390, heightDp = 800)
 @Composable
 private fun HomePreview() {
-    HomeContent(
-        state = HomeUiState(
-            isLoading = false, allSpaces = previewSpaces,
-            upcomingReservations = 2, pastReservations = 1
-        ),
-        userName = "Gabriel", onQueryChange = {}, onRetry = {}, onReserveClick = {}
-    )
+    GAJAPrueba1Theme {
+        HomeContent(
+            state = HomeUiState(
+                isLoading = false, allSpaces = previewSpaces,
+                upcomingReservations = 2, pastReservations = 1
+            ),
+            userName = "Gabriel", onQueryChange = {}, onRetry = {}, onReserveClick = {}
+        )
+    }
 }
 
 @Preview(showBackground = true, widthDp = 390, heightDp = 800)
 @Composable
 private fun HomeNearbyBlockedPreview() {
-    HomeContent(
-        HomeUiState(isLoading = false, allSpaces = previewSpaces, nearby = NearbyState.PermissionBlocked),
-        "Gabriel", {}, {}, {}
-    )
+    GAJAPrueba1Theme {
+        HomeContent(
+            HomeUiState(isLoading = false, allSpaces = previewSpaces, nearby = NearbyState.PermissionBlocked),
+            "Gabriel", {}, {}, {}
+        )
+    }
 }
 
 @Preview(showBackground = true, widthDp = 390, heightDp = 800)
 @Composable
 private fun HomeLoadingPreview() {
-    HomeContent(HomeUiState(isLoading = true), "Gabriel", {}, {}, {})
+    GAJAPrueba1Theme {
+        HomeContent(HomeUiState(isLoading = true), "Gabriel", {}, {}, {})
+    }
 }
 
 @Preview(showBackground = true, widthDp = 390, heightDp = 800)
 @Composable
 private fun HomeErrorPreview() {
-    HomeContent(
-        HomeUiState(isLoading = false, errorMessage = "No pudimos cargar los espacios. Revisa tu conexión e inténtalo de nuevo."),
-        "Gabriel", {}, {}, {}
-    )
+    GAJAPrueba1Theme {
+        HomeContent(
+            HomeUiState(isLoading = false, errorMessage = "No pudimos cargar los espacios. Revisa tu conexión e inténtalo de nuevo."),
+            "Gabriel", {}, {}, {}
+        )
+    }
 }
 
 @Preview(showBackground = true, widthDp = 390, heightDp = 800)
 @Composable
 private fun HomeEmptySearchPreview() {
-    HomeContent(
-        HomeUiState(isLoading = false, allSpaces = previewSpaces, query = "piscina"),
-        "Gabriel", {}, {}, {}
-    )
+    GAJAPrueba1Theme {
+        HomeContent(
+            HomeUiState(isLoading = false, allSpaces = previewSpaces, query = "piscina"),
+            "Gabriel", {}, {}, {}
+        )
+    }
 }

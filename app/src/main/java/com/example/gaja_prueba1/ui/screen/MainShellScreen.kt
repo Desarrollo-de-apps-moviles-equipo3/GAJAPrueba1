@@ -1,13 +1,13 @@
 package com.example.gaja_prueba1.ui.screen
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import android.content.Context
-import android.content.ContextWrapper
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -18,9 +18,9 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,10 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import com.example.gaja_prueba1.model.Space
-import com.example.gaja_prueba1.ui.theme.EspaciosPalette
 
 enum class BottomTab(val label: String, val icon: ImageVector) {
     Inicio("Inicio", Icons.Filled.Home),
@@ -59,7 +57,7 @@ fun MainShellScreen(
     StatusBarIcons(lightIcons = selected == BottomTab.Inicio)
 
     Scaffold(
-        containerColor = EspaciosPalette.Cream,
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             AppBottomBar(
                 tabs = tabs,
@@ -95,7 +93,7 @@ fun AppBottomBar(
     onSelect: (Int) -> Unit
 ) {
     NavigationBar(
-        containerColor = EspaciosPalette.Cream,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         tonalElevation = 0.dp
     ) {
         tabs.forEachIndexed { index, tab ->
@@ -103,14 +101,7 @@ fun AppBottomBar(
                 selected = index == selectedIndex,
                 onClick = { onSelect(index) },
                 icon = { Icon(imageVector = tab.icon, contentDescription = tab.label) },
-                label = { Text(text = tab.label, fontSize = 11.sp) },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = EspaciosPalette.Navy,
-                    selectedTextColor = EspaciosPalette.Navy,
-                    unselectedIconColor = EspaciosPalette.Slate,
-                    unselectedTextColor = EspaciosPalette.Slate,
-                    indicatorColor = EspaciosPalette.Beige
-                )
+                label = { Text(text = tab.label) }
             )
         }
     }

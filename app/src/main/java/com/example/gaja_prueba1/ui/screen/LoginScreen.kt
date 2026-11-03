@@ -32,7 +32,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gaja_prueba1.ui.components.GajaButton
 import com.example.gaja_prueba1.ui.components.GajaSelector
 import com.example.gaja_prueba1.ui.components.GajaTextField
-import com.example.gaja_prueba1.ui.theme.EspaciosPalette
 import com.example.gaja_prueba1.ui.theme.GAJAPrueba1Theme
 import com.example.gaja_prueba1.ui.viewmodels.LoginViewModel
 
@@ -96,23 +95,23 @@ fun LoginScreen(
         Text(
             text = "ESCUELA MILITAR",
             style = MaterialTheme.typography.titleMedium,
-            color = EspaciosPalette.Navy
+            color = MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = "Sistema de Agendamiento de Canchas",
             style = MaterialTheme.typography.bodyMedium,
-            color = EspaciosPalette.Steel
+            color = MaterialTheme.colorScheme.secondary
         )
         Spacer(modifier = Modifier.height(24.dp))
         Text(
             text = "Bienvenido",
             style = MaterialTheme.typography.headlineMedium,
-            color = EspaciosPalette.Navy
+            color = MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = "Ingresa con tu cuenta institucional.",
             style = MaterialTheme.typography.bodyLarge,
-            color = EspaciosPalette.Steel
+            color = MaterialTheme.colorScheme.secondary
         )
 
         GajaSelector(
@@ -159,6 +158,7 @@ fun LoginScreen(
                 color = if (isError) MaterialTheme.colorScheme.error
                 else MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -166,7 +166,7 @@ fun LoginScreen(
         Text(
             text = "¿Olvidaste tu contraseña?",
             style = MaterialTheme.typography.bodyMedium,
-            color = EspaciosPalette.Steel,
+            color = MaterialTheme.colorScheme.secondary,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )

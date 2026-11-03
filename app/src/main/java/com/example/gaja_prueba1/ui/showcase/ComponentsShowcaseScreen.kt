@@ -30,7 +30,6 @@ import androidx.compose.ui.unit.dp
 import com.example.gaja_prueba1.ui.components.GajaButton
 import com.example.gaja_prueba1.ui.components.GajaSelector
 import com.example.gaja_prueba1.ui.components.GajaTextField
-import com.example.gaja_prueba1.ui.theme.EspaciosPalette
 import com.example.gaja_prueba1.ui.theme.GAJAPrueba1Theme
 import androidx.compose.foundation.layout.Row
 import com.example.gaja_prueba1.ui.components.GajaCard
@@ -49,7 +48,7 @@ fun ComponentsShowcaseScreen(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(EspaciosPalette.Cream)
+            .background  (MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 28.dp, vertical = 48.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -57,23 +56,23 @@ fun ComponentsShowcaseScreen(modifier: Modifier = Modifier) {
         Text(
             text = "ESCUELA MILITAR",
             style = MaterialTheme.typography.titleMedium,
-            color = EspaciosPalette.Navy
+            color = MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = "Sistema de Agendamiento de Canchas",
             style = MaterialTheme.typography.bodyMedium,
-            color = EspaciosPalette.Steel
+            color = MaterialTheme.colorScheme.secondary
         )
         Spacer(modifier = Modifier.height(24.dp))
         Text(
             text = "Bienvenido",
             style = MaterialTheme.typography.headlineMedium,
-            color = EspaciosPalette.Navy
+            color = MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = "Ingresa con tu cuenta institucional.",
             style = MaterialTheme.typography.bodyLarge,
-            color = EspaciosPalette.Steel
+            color = MaterialTheme.colorScheme.secondary
         )
 
         GajaSelector(
@@ -114,7 +113,7 @@ fun ComponentsShowcaseScreen(modifier: Modifier = Modifier) {
         Text(
             text = "¿Olvidaste tu contraseña?",
             style = MaterialTheme.typography.bodyMedium,
-            color = EspaciosPalette.Steel,
+            color = MaterialTheme.colorScheme.secondary,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )
@@ -123,7 +122,7 @@ fun ComponentsShowcaseScreen(modifier: Modifier = Modifier) {
         Text(
             text = "Chips de estado",
             style = MaterialTheme.typography.titleMedium,
-            color = EspaciosPalette.Navy
+            color = MaterialTheme.colorScheme.onSurface
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             GajaStatusChip(text = "Confirmada", tone = GajaChipTone.Success)
@@ -134,7 +133,7 @@ fun ComponentsShowcaseScreen(modifier: Modifier = Modifier) {
         Text(
             text = "Chips de filtro",
             style = MaterialTheme.typography.titleMedium,
-            color = EspaciosPalette.Navy
+            color = MaterialTheme.colorScheme.secondary
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("Todas", "Fútbol", "Tenis").forEachIndexed { index, name ->
@@ -149,7 +148,7 @@ fun ComponentsShowcaseScreen(modifier: Modifier = Modifier) {
         Text(
             text = "Tarjetas",
             style = MaterialTheme.typography.titleMedium,
-            color = EspaciosPalette.Navy
+            color = MaterialTheme.colorScheme.onSurface
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             GajaStatCard(value = "3", label = "Pendientes", modifier = Modifier.weight(1f), highlight = true)
@@ -160,12 +159,12 @@ fun ComponentsShowcaseScreen(modifier: Modifier = Modifier) {
             Text(
                 text = "Cancha de Fútbol A",
                 style = MaterialTheme.typography.titleMedium,
-                color = EspaciosPalette.Navy
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = "Hoy · 16:00 - 18:00",
                 style = MaterialTheme.typography.bodyMedium,
-                color = EspaciosPalette.Steel
+                color = MaterialTheme.colorScheme.secondary
             )
         }
     }

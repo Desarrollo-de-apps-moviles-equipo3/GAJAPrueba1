@@ -1,6 +1,11 @@
 package com.example.gaja_prueba1.ui.screen
 
 import android.app.Activity
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.foundation.layout.Box
@@ -51,7 +56,6 @@ fun MainShellScreen(
     var selectedIndex by rememberSaveable { mutableStateOf(0) }
     val selected = tabs[selectedIndex]
 
-    // Inicio tiene fondo oscuro (íconos claros en la barra de estado); las demás son claras.
     StatusBarIcons(lightIcons = selected == BottomTab.Inicio)
 
     Scaffold(
@@ -69,10 +73,16 @@ fun MainShellScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (selected == BottomTab.Inicio) {
-                HomeScreen(userName = userName, onReserveClick = onReserveClick)
-            } else {
-                otherTabs(selected)
+            AnimatedContent(
+                targetState = selected,
+                transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(160)) },
+                label = "tabContent"
+            ) { tab ->
+                if (tab == BottomTab.Inicio) {
+                    HomeScreen(userName = userName, onReserveClick = onReserveClick)
+                } else {
+                    otherTabs(tab)
+                }
             }
         }
     }

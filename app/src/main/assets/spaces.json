@@ -7,7 +7,11 @@
     "capacity": 14,
     "available": true,
     "colorHex": "#2F6B4F",
-    "tags": ["Fútbol"]
+    "tags": [
+      "Fútbol"
+    ],
+    "latitude": -33.4042,
+    "longitude": -70.5781
   },
   {
     "id": "futbol-b",
@@ -17,7 +21,11 @@
     "capacity": 14,
     "available": false,
     "colorHex": "#2F6B4F",
-    "tags": ["Fútbol"]
+    "tags": [
+      "Fútbol"
+    ],
+    "latitude": -33.40455,
+    "longitude": -70.5777
   },
   {
     "id": "tenis-c",
@@ -27,7 +35,11 @@
     "capacity": 4,
     "available": true,
     "colorHex": "#3B6989",
-    "tags": ["Tenis"]
+    "tags": [
+      "Tenis"
+    ],
+    "latitude": -33.4039,
+    "longitude": -70.577
   },
   {
     "id": "multiusos-a",
@@ -37,17 +49,26 @@
     "capacity": 30,
     "available": true,
     "colorHex": "#B7791F",
-    "tags": ["Básquetbol", "Voleibol"]
+    "tags": [
+      "Básquetbol",
+      "Voleibol"
+    ],
+    "latitude": -33.4048,
+    "longitude": -70.5768
   },
   {
     "id": "gimnasio-1",
-    "name": "Gimnasio 1 ",
+    "name": "Gimnasio 1",
     "category": "Recintos",
     "description": "Espacio de ejemplo para probar categorías distintas a Deportes.",
     "capacity": 40,
     "available": true,
     "colorHex": "#718797",
-    "tags": ["Gimnasio"]
+    "tags": [
+      "Gimnasio"
+    ],
+    "latitude": -33.4051,
+    "longitude": -70.5774
   },
   {
     "id": "tenis-a",
@@ -57,6 +78,10 @@
     "capacity": 4,
     "available": true,
     "colorHex": "#3B6989",
-    "tags": ["Tenis"]
+    "tags": [
+      "Tenis"
+    ],
+    "latitude": -33.4037,
+    "longitude": -70.5776
   }
 ]

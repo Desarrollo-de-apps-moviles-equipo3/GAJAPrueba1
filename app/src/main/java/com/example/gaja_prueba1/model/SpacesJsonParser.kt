@@ -17,7 +17,9 @@ object SpacesJsonParser {
                 available = item.optBoolean("available", true),
                 colorHex = item.optString("colorHex", "#3B6989"),
                 tags = if (tagsArray == null) emptyList()
-                else List(tagsArray.length()) { i -> tagsArray.getString(i) }
+                else List(tagsArray.length()) { i -> tagsArray.getString(i) },
+                latitude = if (item.has("latitude")) item.getDouble("latitude") else null,
+                longitude = if (item.has("longitude")) item.getDouble("longitude") else null
             )
         }
     }

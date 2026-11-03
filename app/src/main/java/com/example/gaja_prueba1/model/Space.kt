@@ -8,5 +8,7 @@ data class Space(
     val capacity: Int,
     val available: Boolean,
     val colorHex: String,
-    val tags: List<String> = emptyList()
+    val tags: List<String> = emptyList(),
+    val latitude: Double? = null,
+    val longitude: Double? = null
 )

@@ -1,5 +1,22 @@
 package com.example.gaja_prueba1.ui.screen
 
+import android.Manifest
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
+import android.net.Uri
+import android.app.Activity
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +39,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
@@ -31,9 +50,11 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,17 +62,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gaja_prueba1.model.Space
+import com.example.gaja_prueba1.model.formatDistance
 import com.example.gaja_prueba1.ui.theme.EspaciosPalette
 import com.example.gaja_prueba1.ui.viewmodels.HomeUiState
 import com.example.gaja_prueba1.ui.viewmodels.HomeViewModel
+import com.example.gaja_prueba1.ui.viewmodels.NearbyState
+import com.example.gaja_prueba1.util.NearbyLocationProvider
 
 @Composable
 fun HomeScreen(
@@ -60,13 +87,49 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val locationPermissions = arrayOf(
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    )
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { result ->
+        if (result.values.any { it }) {
+            viewModel.onNearbyRequested()
+        } else {
+            val activity = context.findHostActivity()
+            val canAskAgain = activity != null &&
+                    locationPermissions.any { ActivityCompat.shouldShowRequestPermissionRationale(activity, it) }
+            viewModel.onPermissionDenied(permanently = !canAskAgain)
+        }
+    }
+
     HomeContent(
         state = state,
         userName = userName,
         onQueryChange = viewModel::onQueryChange,
         onRetry = viewModel::loadSpaces,
-        onReserveClick = onReserveClick
+        onReserveClick = onReserveClick,
+        onNearbyClick = {
+            if (NearbyLocationProvider.hasPermission(context)) viewModel.onNearbyRequested()
+            else permissionLauncher.launch(locationPermissions)
+        },
+        onNearbyClear = viewModel::onNearbyCleared,
+        onOpenSettings = {
+            context.startActivity(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }
     )
+}
+
+private tailrec fun Context.findHostActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findHostActivity()
+    else -> null
 }
 
 @Composable
@@ -75,7 +138,10 @@ fun HomeContent(
     userName: String,
     onQueryChange: (String) -> Unit,
     onRetry: () -> Unit,
-    onReserveClick: (Space) -> Unit
+    onReserveClick: (Space) -> Unit,
+    onNearbyClick: () -> Unit = {},
+    onNearbyClear: () -> Unit = {},
+    onOpenSettings: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -109,20 +175,19 @@ fun HomeContent(
                 .padding(horizontal = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            val dash = "–"
             CounterCard(
-                value = if (state.isLoading) dash else state.availableSpaces.toString(),
+                value = if (state.isLoading) null else state.availableSpaces,
                 label = "Áreas disponibles",
                 highlight = true,
                 modifier = Modifier.weight(1f)
             )
             CounterCard(
-                value = if (state.isLoading) dash else state.upcomingReservations.toString(),
+                value = if (state.isLoading) null else state.upcomingReservations,
                 label = "Próximas reservas",
                 modifier = Modifier.weight(1f)
             )
             CounterCard(
-                value = if (state.isLoading) dash else state.pastReservations.toString(),
+                value = if (state.isLoading) null else state.pastReservations,
                 label = "Reservas pasadas",
                 modifier = Modifier.weight(1f)
             )
@@ -153,6 +218,15 @@ fun HomeContent(
                 focusedLeadingIconColor = EspaciosPalette.Slate,
                 unfocusedLeadingIconColor = EspaciosPalette.Slate
             )
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        NearbyControls(
+            nearby = state.nearby,
+            onNearbyClick = onNearbyClick,
+            onNearbyClear = onNearbyClear,
+            onOpenSettings = onOpenSettings
         )
 
         Spacer(Modifier.height(20.dp))
@@ -199,7 +273,12 @@ fun HomeContent(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(state.visibleSpaces, key = { it.id }) { space ->
-                        SpaceCard(space = space, onReserveClick = { onReserveClick(space) })
+                        SpaceCard(
+                            space = space,
+                            distanceText = state.distanceTo(space)?.let(::formatDistance),
+                            onReserveClick = { onReserveClick(space) },
+                            modifier = Modifier.animateItem()
+                        )
                     }
                 }
             }
@@ -252,11 +331,16 @@ private fun HomeHeader() {
 
 @Composable
 private fun CounterCard(
-    value: String,
+    value: Int?,
     label: String,
     modifier: Modifier = Modifier,
     highlight: Boolean = false
 ) {
+    val animated by animateIntAsState(
+        targetValue = value ?: 0,
+        animationSpec = tween(durationMillis = 700),
+        label = "counter"
+    )
     Column(
         modifier = modifier
             .background(EspaciosPalette.SkyCard, RoundedCornerShape(16.dp))
@@ -264,7 +348,7 @@ private fun CounterCard(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = value,
+            text = if (value == null) "–" else animated.toString(),
             color = if (highlight) EspaciosPalette.Green else EspaciosPalette.Navy,
             fontSize = 28.sp,
             fontWeight = FontWeight.SemiBold
@@ -281,10 +365,98 @@ private fun CounterCard(
 }
 
 @Composable
-private fun SpaceCard(space: Space, onReserveClick: () -> Unit) {
+private fun NearbyControls(
+    nearby: NearbyState,
+    onNearbyClick: () -> Unit,
+    onNearbyClear: () -> Unit,
+    onOpenSettings: () -> Unit
+) {
+    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+        if (nearby == NearbyState.Active) {
+            OutlinedButton(
+                onClick = onNearbyClear,
+                shape = RoundedCornerShape(999.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = EspaciosPalette.White)
+            ) {
+                Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Quitar orden por cercanía", fontSize = 13.sp)
+            }
+        } else {
+            Button(
+                onClick = onNearbyClick,
+                enabled = nearby != NearbyState.Locating,
+                shape = RoundedCornerShape(999.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = EspaciosPalette.Orange,
+                    contentColor = EspaciosPalette.White
+                )
+            ) {
+                if (nearby == NearbyState.Locating) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = EspaciosPalette.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(18.dp))
+                }
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    if (nearby == NearbyState.Locating) "Buscando…" else "Cerca de mí",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+
+        val message = nearbyMessage(nearby)
+        AnimatedVisibility(
+            visible = message != null,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            Column(modifier = Modifier.padding(top = 8.dp)) {
+                Text(
+                    text = message.orEmpty(),
+                    color = if (nearby == NearbyState.Active) EspaciosPalette.White.copy(alpha = 0.85f)
+                    else Color(0xFFFFB4A8),
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp
+                )
+                if (nearby == NearbyState.PermissionBlocked) {
+                    TextButton(onClick = onOpenSettings) {
+                        Text("Abrir ajustes", color = EspaciosPalette.Orange, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun nearbyMessage(nearby: NearbyState): String? = when (nearby) {
+    NearbyState.Idle, NearbyState.Locating -> null
+    NearbyState.Active -> "Mostrando primero los espacios más cercanos a ti."
+    NearbyState.PermissionDenied ->
+        "Sin el permiso de ubicación no podemos ordenar por cercanía. Intentalo de nuevo."
+    NearbyState.PermissionBlocked ->
+        "El permiso de ubicación está bloqueado. Actívalo en Ajustes para usar “Cerca de mí”."
+    NearbyState.LocationOff -> "La ubicación del teléfono está apagada. Actívala e inténtalo de nuevo."
+    NearbyState.Unavailable -> "No pudimos obtener tu ubicación. Inténtalo de nuevo."
+}
+
+@Composable
+private fun SpaceCard(
+    space: Space,
+    onReserveClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    distanceText: String? = null
+) {
     val baseColor = colorFromHex(space.colorHex)
     Card(
-        modifier = Modifier.width(260.dp),
+        modifier = modifier
+            .width(260.dp)
+            .animateContentSize(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = EspaciosPalette.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -337,7 +509,10 @@ private fun SpaceCard(space: Space, onReserveClick: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Hasta ${space.capacity} personas",
+                    text = buildString {
+                        append("Hasta ${space.capacity} personas")
+                        if (distanceText != null) append(" · $distanceText")
+                    },
                     color = EspaciosPalette.Slate,
                     fontSize = 12.sp
                 )
@@ -401,15 +576,12 @@ private fun MessageBlock(text: String, actionLabel: String? = null, onAction: ()
     }
 }
 
-/** Convierte "#RRGGBB" en Color; si el texto viene mal en el JSON usa el azul acero. */
 private fun colorFromHex(hex: String): Color =
     try {
         Color(android.graphics.Color.parseColor(hex))
     } catch (e: IllegalArgumentException) {
         EspaciosPalette.Steel
     }
-
-// ---------- Previews (se ven en Android Studio sin ejecutar la app) ----------
 
 private val previewSpaces = listOf(
     Space("multiusos-a", "Cancha Multiusos A", "Deportes",
@@ -432,6 +604,15 @@ private fun HomePreview() {
             upcomingReservations = 2, pastReservations = 1
         ),
         userName = "Gabriel", onQueryChange = {}, onRetry = {}, onReserveClick = {}
+    )
+}
+
+@Preview(showBackground = true, widthDp = 390, heightDp = 800)
+@Composable
+private fun HomeNearbyBlockedPreview() {
+    HomeContent(
+        HomeUiState(isLoading = false, allSpaces = previewSpaces, nearby = NearbyState.PermissionBlocked),
+        "Gabriel", {}, {}, {}
     )
 }
 

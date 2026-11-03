@@ -1,12 +1,10 @@
 package com.example.gaja_prueba1.ui.components
 
-import android.graphics.drawable.Icon
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Error
@@ -15,6 +13,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -27,17 +26,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.gaja_prueba1.ui.theme.EspaciosPalette
 import com.example.gaja_prueba1.ui.theme.GAJAPrueba1Theme
-import com.example.gaja_prueba1.ui.theme.InterFamily
-
 
 @Composable
 fun GajaTextField(
@@ -50,27 +43,27 @@ fun GajaTextField(
     isPassword: Boolean = false
 ) {
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
+    val containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
 
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         modifier = modifier.fillMaxWidth(),
         singleLine = true,
-        textStyle = TextStyle(fontFamily = InterFamily, fontSize = 15.sp),
-        label = { Text(label, fontFamily = InterFamily) },
+        label = { Text(label) },
         leadingIcon = leadingIcon?.let { icon -> { Icon(icon, contentDescription = null) } },
-        trailingIcon = if (isPassword || errorText !=null) {
+        trailingIcon = if (isPassword || errorText != null) {
             {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (errorText !=null) {
+                    if (errorText != null) {
                         Icon(
                             imageVector = Icons.Filled.Error,
                             contentDescription = "Error",
-                            tint = EspaciosPalette.Danger
+                            tint = MaterialTheme.colorScheme.error
                         )
                     }
                     if (isPassword) {
-                        IconButton(onClick = {passwordVisible = !passwordVisible}) {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(
                                 imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
                                 contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
@@ -80,33 +73,23 @@ fun GajaTextField(
                 }
             }
         } else null,
+        visualTransformation = if (isPassword && !passwordVisible) {
+            PasswordVisualTransformation()
+        } else {
+            androidx.compose.ui.text.input.VisualTransformation.None
+        },
         keyboardOptions = if (isPassword) {
             KeyboardOptions(keyboardType = KeyboardType.Password)
         } else {
             KeyboardOptions.Default
         },
         isError = errorText != null,
-        supportingText = errorText?.let { { Text(it, fontFamily = InterFamily) } },
-        shape = RoundedCornerShape(12.dp),
+        supportingText = errorText?.let { { Text(it) } },
+        shape = MaterialTheme.shapes.medium,
         colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = EspaciosPalette.White,
-            unfocusedContainerColor = EspaciosPalette.White,
-            errorContainerColor = EspaciosPalette.White,
-            focusedBorderColor = EspaciosPalette.Navy,
-            unfocusedBorderColor = EspaciosPalette.Beige,
-            errorBorderColor = EspaciosPalette.Danger,
-            focusedTextColor = EspaciosPalette.Navy,
-            unfocusedTextColor = EspaciosPalette.Navy,
-            errorTextColor = EspaciosPalette.Navy,
-            focusedLabelColor = EspaciosPalette.Navy,
-            unfocusedLabelColor = EspaciosPalette.Slate,
-            errorLabelColor = EspaciosPalette.Danger,
-            cursorColor = EspaciosPalette.Navy,
-            focusedLeadingIconColor = EspaciosPalette.Navy,
-            unfocusedLeadingIconColor = EspaciosPalette.Slate,
-            errorLeadingIconColor = EspaciosPalette.Danger,
-            errorTrailingIconColor = EspaciosPalette.Danger,
-            errorSupportingTextColor = EspaciosPalette.Danger
+            focusedContainerColor = containerColor,
+            unfocusedContainerColor = containerColor,
+            errorContainerColor = containerColor
         )
     )
 }
@@ -115,7 +98,7 @@ fun GajaTextField(
 @Composable
 private fun GajaTextFieldPreview() {
     GAJAPrueba1Theme {
-        var user by remember {mutableStateOf("")}
+        var user by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
         var email by remember { mutableStateOf("") }
 

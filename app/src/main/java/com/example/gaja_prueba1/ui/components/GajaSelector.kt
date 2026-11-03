@@ -12,13 +12,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.AssignmentTurnedIn
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,10 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.gaja_prueba1.ui.theme.EspaciosPalette
 import com.example.gaja_prueba1.ui.theme.GAJAPrueba1Theme
-import com.example.gaja_prueba1.ui.theme.InterFamily
 
 @Composable
 fun GajaSelector(
@@ -57,10 +54,8 @@ fun GajaSelector(
         if (label != null) {
             Text(
                 text = label,
-                color = EspaciosPalette.Steel,
-                fontFamily = InterFamily,
-                fontWeight = FontWeight.Medium,
-                fontSize = 12.sp
+                color = MaterialTheme.colorScheme.secondary,
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium)
             )
         }
         options.indices.chunked(safeColumns).forEach { rowIndices ->
@@ -93,14 +88,18 @@ private fun SelectorOption(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val shape = RoundedCornerShape(12.dp)
-    val contentColor = if (selected) EspaciosPalette.White else EspaciosPalette.Navy
+    val scheme = MaterialTheme.colorScheme
+    val shape = MaterialTheme.shapes.medium
+    val containerColor = if (selected) scheme.primary else scheme.surfaceContainerLow
+    val contentColor = if (selected) scheme.onPrimary else scheme.onSurface
+    val borderColor = if (selected) scheme.primary else scheme.outlineVariant
+
     Row(
         modifier = modifier
             .heightIn(min = 44.dp)
             .clip(shape)
-            .background(if (selected) EspaciosPalette.Navy else EspaciosPalette.Cream)
-            .border(1.dp, if (selected) EspaciosPalette.Navy else EspaciosPalette.Beige, shape)
+            .background(containerColor)
+            .border(1.dp, borderColor, shape)
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -117,9 +116,9 @@ private fun SelectorOption(
         Text(
             text = text,
             color = contentColor,
-            fontFamily = InterFamily,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-            fontSize = 13.sp,
+            style = MaterialTheme.typography.labelLarge.copy(
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
+            ),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )

@@ -1,53 +1,36 @@
 package com.example.gaja_prueba1.ui.theme
 
-import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.Shapes
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.unit.dp
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+private val GajaShapes = Shapes(
+    small = RoundedCornerShape(8.dp),
+    medium = RoundedCornerShape(12.dp),
+    large = RoundedCornerShape(16.dp)
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = EspaciosPalette.Navy,
-    onPrimary = EspaciosPalette.White,
-    secondary = EspaciosPalette.Steel,
-    tertiary = EspaciosPalette.Orange,
-    background = EspaciosPalette.Cream,
-    onBackground = EspaciosPalette.Navy,
-    surface = EspaciosPalette.White,
-    onSurface = EspaciosPalette.Navy,
-    error = EspaciosPalette.Danger
-)
+val MaterialTheme.extendedColors: ExtendedColors
+    @Composable @ReadOnlyComposable get() = LocalExtendedColors.current
 
 @Composable
 fun GAJAPrueba1Theme(
     darkTheme: Boolean = false,
-    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val extended = if (darkTheme) DarkExtendedColors else LightExtendedColors
 
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+    CompositionLocalProvider(LocalExtendedColors provides extended) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            shapes = GajaShapes,
+            typography = Typography,
+            content = content
+        )
     }
-
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
 }

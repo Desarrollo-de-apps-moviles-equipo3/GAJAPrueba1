@@ -1,6 +1,7 @@
 package com.example.gaja_prueba1.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -15,11 +16,22 @@ val InterFamily = FontFamily(
 
 private val Base = Typography()
 
+private fun TextStyle.inter(): TextStyle = copy(fontFamily = InterFamily)
+
 val Typography = Typography(
-    headlineMedium = Base.headlineMedium.copy(fontFamily = InterFamily),
-    titleLarge = Base.titleLarge.copy(fontFamily = InterFamily),
-    titleMedium = Base.titleMedium.copy(fontFamily = InterFamily),
-    bodyLarge = Base.bodyLarge.copy(fontFamily = InterFamily),
-    bodyMedium = Base.bodyMedium.copy(fontFamily = InterFamily),
-    labelLarge = Base.labelLarge.copy(fontFamily = InterFamily)
+    displayLarge = Base.displayLarge.inter(),
+    displayMedium = Base.displayMedium.inter(),
+    displaySmall = Base.displaySmall.inter(),
+    headlineLarge = Base.headlineLarge.inter(),
+    headlineMedium = Base.headlineMedium.inter(),
+    headlineSmall = Base.headlineSmall.inter(),
+    titleLarge = Base.titleLarge.inter(),
+    titleMedium = Base.titleMedium.inter(),
+    titleSmall = Base.titleSmall.inter(),
+    bodyLarge = Base.bodyLarge.inter(),
+    bodyMedium = Base.bodyMedium.inter(),
+    bodySmall = Base.bodySmall.inter(),
+    labelLarge = Base.labelLarge.inter(),
+    labelMedium = Base.labelMedium.inter(),
+    labelSmall = Base.labelSmall.inter()
 )

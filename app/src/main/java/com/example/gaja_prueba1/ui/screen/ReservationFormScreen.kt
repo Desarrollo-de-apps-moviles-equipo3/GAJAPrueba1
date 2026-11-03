@@ -143,23 +143,6 @@ private fun DateStep(
             Spacer(Modifier.width(8.dp))
             Text(monthLabel, color = EspaciosPalette.Navy, fontWeight = FontWeight.SemiBold)
         }
-        Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            dates.take(7).forEach { millis ->
-                val cal = Calendar.getInstance().apply { timeInMillis = millis }
-                val isSelected = ReservationValidator.startOfDay(millis).timeInMillis ==
-                        ReservationValidator.startOfDay(selected).timeInMillis
-                Column(
-                    modifier = Modifier.clickable { onSelect(millis) }.padding(4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(ReservationValidator.formatDate(millis, "EEEEE").uppercase(Locale("es", "CL")), color = EspaciosPalette.Slate, fontSize = 10.sp)
-                    Spacer(Modifier.height(7.dp))
-                    Box(Modifier.size(30.dp).background(if (isSelected) EspaciosPalette.Navy else EspaciosPalette.White, CircleShape), contentAlignment = Alignment.Center) {
-                        Text(cal.get(Calendar.DAY_OF_MONTH).toString(), color = if (isSelected) EspaciosPalette.White else EspaciosPalette.Navy, fontSize = 12.sp)
-                    }
-                }
-            }
-        }
         Text("Selecciona una fecha", modifier = Modifier.padding(start = 20.dp, top = 18.dp, bottom = 8.dp), color = EspaciosPalette.Navy, fontWeight = FontWeight.Medium, fontSize = 14.sp)
         LazyColumn(
             modifier = Modifier.weight(1f).padding(horizontal = 18.dp),

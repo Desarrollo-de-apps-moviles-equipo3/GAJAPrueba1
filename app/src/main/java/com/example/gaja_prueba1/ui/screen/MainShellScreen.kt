@@ -53,7 +53,8 @@ enum class BottomTab(val label: String, val icon: ImageVector) {
 fun MainShellScreen(
     userName: String,
     onReserveClick: (Space) -> Unit = {},
-    otherTabs: @Composable (BottomTab) -> Unit = { tab -> ComingSoonScreen(sectionName = tab.label) }
+    otherTabs: @Composable (BottomTab, () -> Unit, (Space) -> Unit) -> Unit =
+        { tab, _, _ -> ComingSoonScreen(sectionName = tab.label) }
 ) {
     val tabs = BottomTab.entries
     var selectedIndex by rememberSaveable { mutableStateOf(0) }
@@ -67,7 +68,7 @@ fun MainShellScreen(
     Scaffold(
         containerColor = EspaciosPalette.Cream,
         bottomBar = {
-            if (reservationSpace == null) {
+            if (reservationSpace == null && selected != BottomTab.Reservas) {
                 AppBottomBar(
                     tabs = tabs,
                     selectedIndex = selectedIndex,
@@ -108,7 +109,14 @@ fun MainShellScreen(
                             }
                         )
                     } else {
-                        otherTabs(tab)
+                        otherTabs(
+                            tab,
+                            { selectedIndex = 0 },
+                            { space ->
+                                reservationSpace = space
+                                onReserveClick(space)
+                            }
+                        )
                     }
                 }
             }

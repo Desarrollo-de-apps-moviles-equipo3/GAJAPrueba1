@@ -4,6 +4,8 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
+import androidx.room.Delete
+
 
 @Dao
 interface ReservationDao {
@@ -23,4 +25,14 @@ interface ReservationDao {
     /** Pasadas: fecha anterior a hoy */
     @Query("SELECT COUNT(*) FROM reservation WHERE date < :today")
     fun observePastCount(today: String): Flow<Int>
+
+    /** GoboActus */
+
+    @Query("SELECT * FROM reservation WHERE date = :date")
+    fun observeByDate(date: String): Flow<List<ReservationEntity>>
+
+    @Delete
+    suspend fun delete(reservation: ReservationEntity)
+
+
 }

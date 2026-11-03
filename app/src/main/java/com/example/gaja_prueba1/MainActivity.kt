@@ -14,17 +14,24 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.example.gaja_prueba1.ui.screen.BottomTab
+import com.example.gaja_prueba1.ui.screen.ComingSoonScreen
 import com.example.gaja_prueba1.ui.screen.LoginScreen
 import com.example.gaja_prueba1.ui.screen.MainShellScreen
+import com.example.gaja_prueba1.ui.screen.ProfileScreen
 import com.example.gaja_prueba1.ui.theme.GAJAPrueba1Theme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContent {
             GAJAPrueba1Theme {
-                var loggedEmail by rememberSaveable { mutableStateOf<String?>(null) }
+                var loggedEmail by rememberSaveable {
+                    mutableStateOf<String?>(null)
+                }
+
                 val email = loggedEmail
 
                 if (email == null) {
@@ -35,14 +42,40 @@ class MainActivity : ComponentActivity() {
                                 .padding(innerPadding),
                             color = MaterialTheme.colorScheme.background
                         ) {
-                            LoginScreen(onLoginSuccess = { loggedEmail = it })
+                            LoginScreen(
+                                onLoginSuccess = { loggedEmail = it }
+                            )
                         }
                     }
                 } else {
+                    val userName = email.substringBefore("@")
+                        .replace("_", " ")
+                        .replaceFirstChar { it.uppercase() }
+
                     MainShellScreen(
-                        userName = email.substringBefore("@")
-                            .replace("_", " ")
-                            .replaceFirstChar { it.uppercase() }
+                        userName = userName,
+                        otherTabs = { tab ->
+                            if (tab == BottomTab.Perfil) {
+                                ProfileScreen(
+                                    fullName = userName,
+                                    email = email,
+                                    onMyReservations = {
+                                        // Conectar con Mis reservas cuando esté disponible.
+                                    },
+                                    onPersonalData = {
+                                        // Conectar con Datos personales cuando esté disponible.
+                                    },
+                                    onChangePassword = {
+                                        // Conectar con Cambiar contraseña cuando esté disponible.
+                                    },
+                                    onLogout = {
+                                        loggedEmail = null
+                                    }
+                                )
+                            } else {
+                                ComingSoonScreen(sectionName = tab.label)
+                            }
+                        }
                     )
                 }
             }

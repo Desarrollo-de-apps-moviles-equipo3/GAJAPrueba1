@@ -42,6 +42,10 @@ object ReservationValidator {
         else -> null
     }
 
+    // Regla del límite diario. Recibe cuántas reservas ya existen ese día.
+    fun validateDailyLimit(reservationsThatDay: Int): String? =
+        if (reservationsThatDay >= MAX_PER_DAY) "Ese día ya alcanzó el máximo de reservas" else null
+
     // Formato para guardar y ordenar la fecha en Room.
     fun toIsoDate(millis: Long): String =
         SimpleDateFormat("yyyy-MM-dd", Locale.US).format(millis)

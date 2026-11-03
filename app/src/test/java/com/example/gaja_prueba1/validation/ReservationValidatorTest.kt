@@ -77,4 +77,19 @@ class ReservationValidatorTest {
     fun motivo_de_10_caracteres_es_valido() {
         assertNull(ReservationValidator.validateReason("1234567890"))
     }
+
+    // ---------- Límite diario ----------
+
+    @Test
+    fun con_2_reservas_la_tercera_es_valida() {
+        assertNull(ReservationValidator.validateDailyLimit(2))
+    }
+
+    @Test
+    fun con_3_reservas_la_cuarta_da_error() {
+        assertEquals(
+            "Ese día ya alcanzó el máximo de reservas",
+            ReservationValidator.validateDailyLimit(3)
+        )
+    }
 }

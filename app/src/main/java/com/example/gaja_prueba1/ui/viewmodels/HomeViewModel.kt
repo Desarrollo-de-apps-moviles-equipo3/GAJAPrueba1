@@ -3,6 +3,7 @@ package com.example.gaja_prueba1.ui.viewmodels
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.gaja_prueba1.data.AppDatabase
 import com.example.gaja_prueba1.model.FakeSpacesRepository
 import com.example.gaja_prueba1.model.Space
 import com.example.gaja_prueba1.model.SpacesRepository
@@ -11,10 +12,12 @@ import com.example.gaja_prueba1.model.filterSpaces
 import com.example.gaja_prueba1.model.sortByDistance
 import com.example.gaja_prueba1.util.LocationResult
 import com.example.gaja_prueba1.util.NearbyLocationProvider
+import com.example.gaja_prueba1.validation.ReservationValidator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -54,12 +57,29 @@ data class HomeUiState(
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: SpacesRepository = FakeSpacesRepository(application)
+    private val reservationDao = AppDatabase.get(application).reservationDao()
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
         loadSpaces()
+        observeReservationCounters()
+    }
+
+    private fun observeReservationCounters() {
+        val today = ReservationValidator.toIsoDate(System.currentTimeMillis())
+        viewModelScope.launch {
+            combine(
+                reservationDao.observeUpcomingCount(today),
+                reservationDao.observePastCount(today)
+            ) { upcoming, past -> upcoming to past }
+                .collect { (upcoming, past) ->
+                    _uiState.update {
+                        it.copy(upcomingReservations = upcoming, pastReservations = past)
+                    }
+                }
+        }
     }
 
     fun loadSpaces() {
@@ -70,9 +90,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        allSpaces = spaces,
-                        upcomingReservations = 2,
-                        pastReservations = 1
+                        allSpaces = spaces
                     )
                 }
             } catch (e: CancellationException) {

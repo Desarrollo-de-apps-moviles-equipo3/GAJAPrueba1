@@ -164,11 +164,12 @@ class ReservationViewModel(application: Application) : AndroidViewModel(applicat
             try {
                 val sameDay = repository.reservationsOn(isoDate)
 
-                if (sameDay.size >= ReservationValidator.MAX_PER_DAY) {
+                val dailyLimitError = ReservationValidator.validateDailyLimit(sameDay.size)
+                if (dailyLimitError != null) {
                     _uiState.update {
                         it.copy(
                             isSaving = false,
-                            dateError = "Ese día ya alcanzó el máximo de reservas"
+                            dateError = dailyLimitError
                         )
                     }
                     return@launch

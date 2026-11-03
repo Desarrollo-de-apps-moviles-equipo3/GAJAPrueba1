@@ -3,11 +3,13 @@ package com.example.gaja_prueba1.ui.components
 import android.graphics.drawable.Icon
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -22,6 +24,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
@@ -34,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import com.example.gaja_prueba1.ui.theme.EspaciosPalette
 import com.example.gaja_prueba1.ui.theme.GAJAPrueba1Theme
 import com.example.gaja_prueba1.ui.theme.InterFamily
+
 
 @Composable
 fun GajaTextField(
@@ -55,21 +59,27 @@ fun GajaTextField(
         textStyle = TextStyle(fontFamily = InterFamily, fontSize = 15.sp),
         label = { Text(label, fontFamily = InterFamily) },
         leadingIcon = leadingIcon?.let { icon -> { Icon(icon, contentDescription = null) } },
-        trailingIcon = if (isPassword) {
+        trailingIcon = if (isPassword || errorText !=null) {
             {
-                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(
-                        imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                        contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (errorText !=null) {
+                        Icon(
+                            imageVector = Icons.Filled.Error,
+                            contentDescription = "Error",
+                            tint = EspaciosPalette.Danger
+                        )
+                    }
+                    if (isPassword) {
+                        IconButton(onClick = {passwordVisible = !passwordVisible}) {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
+                            )
+                        }
+                    }
                 }
             }
         } else null,
-        visualTransformation = if (isPassword && !passwordVisible) {
-            PasswordVisualTransformation()
-        } else {
-            VisualTransformation.None
-        },
         keyboardOptions = if (isPassword) {
             KeyboardOptions(keyboardType = KeyboardType.Password)
         } else {

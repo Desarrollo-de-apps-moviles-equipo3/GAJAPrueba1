@@ -68,7 +68,7 @@ fun MainShellScreen(
     Scaffold(
         containerColor = EspaciosPalette.Cream,
         bottomBar = {
-            if (reservationSpace == null && selected != BottomTab.Reservas) {
+            if (reservationSpace == null) {
                 AppBottomBar(
                     tabs = tabs,
                     selectedIndex = selectedIndex,
@@ -89,6 +89,10 @@ fun MainShellScreen(
                     onDone = {
                         reservationSpace = null
                         selectedIndex = 0
+                    },
+                    onViewReservations = {
+                        reservationSpace = null
+                        selectedIndex = tabs.indexOf(BottomTab.Reservas)
                     },
                     viewModel = reservationViewModel
                 )
@@ -111,7 +115,7 @@ fun MainShellScreen(
                     } else {
                         otherTabs(
                             tab,
-                            { selectedIndex = 0 },
+                            { selectedIndex = tabs.indexOf(BottomTab.Reservas) },
                             { space ->
                                 reservationSpace = space
                                 onReserveClick(space)

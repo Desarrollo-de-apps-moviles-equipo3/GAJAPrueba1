@@ -1,5 +1,9 @@
 package com.example.gaja_prueba1.ui.screen
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -21,9 +25,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -41,45 +42,50 @@ fun LoginScreen(
     viewModel: LoginViewModel = viewModel()
 ) {
     val loggedUser by viewModel.loggedUser.collectAsState()
-    LaunchedEffect(loggedUser) {
-        loggedUser?.let(onLoginSuccess)
-    }
     val email by viewModel.email.collectAsState()
     val password by viewModel.password.collectAsState()
+    val selectedRole by viewModel.selectedRole.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val loginMessage by viewModel.loginMessage.collectAsState()
     val isError by viewModel.isError.collectAsState()
     val emailError by viewModel.emailError.collectAsState()
     val passwordError by viewModel.passwordError.collectAsState()
-    // El rol vive aquí por ahora; el ViewModel todavía no lo maneja.
-    var selectedRole by rememberSaveable { mutableStateOf(0) }
 
-    LoginScreen(
+    LaunchedEffect(loggedUser) {
+        val user = loggedUser
+
+        if (user != null) {
+            onLoginSuccess(user)
+            viewModel.consumeLoginSuccess()
+        }
+    }
+
+    LoginForm(
         email = email,
         password = password,
+        selectedRole = selectedRole,
         isLoading = isLoading,
         loginMessage = loginMessage,
         isError = isError,
         emailError = emailError,
         passwordError = passwordError,
-        selectedRole = selectedRole,
-        onRoleChange = { selectedRole = it },
-        onEmailChange = { viewModel.onEmailChange(it) },
-        onPasswordChange = { viewModel.onPasswordChange(it) },
-        onLoginClick = { viewModel.onLoginClick() }
+        onRoleChange = viewModel::onRoleChange,
+        onEmailChange = viewModel::onEmailChange,
+        onPasswordChange = viewModel::onPasswordChange,
+        onLoginClick = viewModel::onLoginClick
     )
 }
 
 @Composable
-fun LoginScreen(
+private fun LoginForm(
     email: String,
     password: String,
+    selectedRole: Int,
     isLoading: Boolean,
     loginMessage: String,
     isError: Boolean,
     emailError: String?,
     passwordError: String?,
-    selectedRole: Int,
     onRoleChange: (Int) -> Unit,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
@@ -97,17 +103,21 @@ fun LoginScreen(
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
+
         Text(
             text = "Sistema de Agendamiento de Canchas",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.secondary
         )
+
         Spacer(modifier = Modifier.height(24.dp))
+
         Text(
             text = "Bienvenido",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
+
         Text(
             text = "Ingresa con tu cuenta institucional.",
             style = MaterialTheme.typography.bodyLarge,
@@ -116,7 +126,12 @@ fun LoginScreen(
 
         GajaSelector(
             label = "Ingresar como",
-            options = listOf("Cadete", "Oficial", "Oficial de semana", "Institución externa"),
+            options = listOf(
+                "Cadete",
+                "Oficial",
+                "Oficial de semana",
+                "Institución externa"
+            ),
             icons = listOf(
                 Icons.Outlined.Person,
                 Icons.Outlined.Shield,
@@ -135,6 +150,7 @@ fun LoginScreen(
             errorText = emailError,
             modifier = Modifier.fillMaxWidth()
         )
+
         GajaTextField(
             value = password,
             onValueChange = onPasswordChange,
@@ -145,18 +161,38 @@ fun LoginScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        GajaButton(
-            text = "Iniciar sesión",
-            onClick = onLoginClick,
-            loading = isLoading,
-            modifier = Modifier.fillMaxWidth()
-        )
+        // Animación entre el botón normal y el estado de carga.
+        Crossfade(
+            targetState = isLoading,
+            label = "loginButtonLoading"
+        ) { loading ->
 
-        if (loginMessage.isNotEmpty()) {
+            GajaButton(
+                text = if (loading) {
+                    "Validando..."
+                } else {
+                    "Iniciar sesión"
+                },
+                onClick = onLoginClick,
+                loading = loading,
+                enabled = !loading,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        // El mensaje de respuesta aparece y desaparece animadamente.
+        AnimatedVisibility(
+            visible = loginMessage.isNotEmpty(),
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
             Text(
                 text = loginMessage,
-                color = if (isError) MaterialTheme.colorScheme.error
-                else MaterialTheme.colorScheme.primary,
+                color = if (isError) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.fillMaxWidth()
@@ -175,17 +211,17 @@ fun LoginScreen(
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun LoginScreenPreview() {
+private fun LoginScreenPreview() {
     GAJAPrueba1Theme {
-        LoginScreen(
+        LoginForm(
             email = "",
             password = "",
+            selectedRole = 0,
             isLoading = false,
             loginMessage = "",
             isError = false,
             emailError = null,
             passwordError = null,
-            selectedRole = 0,
             onRoleChange = {},
             onEmailChange = {},
             onPasswordChange = {},

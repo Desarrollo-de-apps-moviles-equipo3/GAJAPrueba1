@@ -1,6 +1,7 @@
 # GAJA · Reserva de espacios deportivos
 
 Aplicación móvil Android para solicitar y consultar la reserva de espacios deportivos (canchas, gimnasios y recintos). Desarrollada en Kotlin con Jetpack Compose como proyecto de la asignatura **Desarrollo de Aplicaciones Móviles (DSY1105)**, Evaluación Parcial 2.
+
 **Link Trello**
 https://trello.com/invite/b/6aa1ceeb2a571c1c37ebe421/ATTI0431bfec356275823e26300420aa7227A4B89F4A/gaja
 

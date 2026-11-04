@@ -193,7 +193,7 @@ fun HomeContent(
             )
             CounterCard(
                 value = if (state.isLoading) null else state.pastReservations,
-                label = "Reservas pasadas",
+                label = "Historial de reservas",
                 modifier = Modifier.weight(1f)
             )
         }

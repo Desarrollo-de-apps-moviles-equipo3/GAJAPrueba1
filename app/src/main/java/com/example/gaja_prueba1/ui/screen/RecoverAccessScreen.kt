@@ -44,6 +44,7 @@ import com.example.gaja_prueba1.ui.theme.GAJAPrueba1Theme
 import com.example.gaja_prueba1.ui.theme.extendedColors
 import com.example.gaja_prueba1.ui.viewmodels.RecoverAccessUiState
 import com.example.gaja_prueba1.ui.viewmodels.RecoverAccessViewModel
+import androidx.compose.material.icons.filled.Error
 
 @Composable
 fun RecoverAccessScreen(
@@ -121,6 +122,15 @@ private fun RecoverForm(
         modifier = Modifier.fillMaxWidth(),
         label = { Text("Usuario o correo institucional") },
         leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
+        trailingIcon = {
+            if (state.fieldError != null) {
+                Icon(
+                    Icons.Filled.Error,
+                    contentDescription = "Error",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+        },
         singleLine = true,
         isError = state.fieldError != null,
         supportingText = { if (state.fieldError != null) Text(state.fieldError) },

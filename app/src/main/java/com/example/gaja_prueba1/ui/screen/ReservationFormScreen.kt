@@ -279,6 +279,15 @@ private fun DetailsStep(
             onValueChange = onReason,
             modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
             placeholder = { Text("Ej. Entrenamiento, reunión o actividad") },
+            trailingIcon = {
+                if (state.reasonError != null) {
+                    Icon(
+                        Icons.Filled.Error,
+                        contentDescription = "Error",
+                        tint = EspaciosPalette.Danger
+                    )
+                }
+            },
             minLines = 2,
             isError = state.reasonError != null,
             supportingText = state.reasonError?.let { message -> { Text(message) } },

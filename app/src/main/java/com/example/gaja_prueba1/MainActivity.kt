@@ -35,6 +35,7 @@ import com.example.gaja_prueba1.ui.screen.MyReservationsScreen
 import com.example.gaja_prueba1.ui.screen.ProfileScreen
 import com.example.gaja_prueba1.ui.theme.GAJAPrueba1Theme
 import kotlinx.coroutines.launch
+import com.example.gaja_prueba1.ui.screen.RecoverAccessScreen
 
 class MainActivity : ComponentActivity() {
 
@@ -55,6 +56,10 @@ class MainActivity : ComponentActivity() {
 
                 var isCheckingSession by remember {
                     mutableStateOf(true)
+                }
+
+                var showRecover by remember {
+                    mutableStateOf(false)
                 }
 
                 // Comprueba si hay una sesión guardada.
@@ -98,14 +103,21 @@ class MainActivity : ComponentActivity() {
                                         .padding(innerPadding),
                                     color = MaterialTheme.colorScheme.background
                                 ) {
-                                    LoginScreen(
-                                        onLoginSuccess = {
-                                            lifecycleScope.launch {
-                                                activeSession =
-                                                    sessionRepository.currentSession()
-                                            }
-                                        }
-                                    )
+                                    if (showRecover) {
+                                        RecoverAccessScreen(
+                                            onBack = { showRecover = false }
+                                        )
+                                    } else {
+                                        LoginScreen(
+                                            onLoginSuccess = {
+                                                lifecycleScope.launch {
+                                                    activeSession =
+                                                        sessionRepository.currentSession()
+                                                }
+                                            },
+                                            onForgotPassword = { showRecover = true }
+                                        )
+                                    }
                                 }
                             }
 

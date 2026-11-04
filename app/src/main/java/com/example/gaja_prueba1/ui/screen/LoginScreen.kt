@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.AssignmentTurnedIn
@@ -39,6 +40,7 @@ import com.example.gaja_prueba1.ui.viewmodels.LoginViewModel
 @Composable
 fun LoginScreen(
     onLoginSuccess: (String) -> Unit = {},
+    onForgotPassword: () -> Unit = {},
     viewModel: LoginViewModel = viewModel()
 ) {
     val loggedUser by viewModel.loggedUser.collectAsState()
@@ -72,7 +74,8 @@ fun LoginScreen(
         onRoleChange = viewModel::onRoleChange,
         onEmailChange = viewModel::onEmailChange,
         onPasswordChange = viewModel::onPasswordChange,
-        onLoginClick = viewModel::onLoginClick
+        onLoginClick = viewModel::onLoginClick,
+        onForgotPasswordClick = onForgotPassword
     )
 }
 
@@ -89,7 +92,8 @@ private fun LoginForm(
     onRoleChange: (Int) -> Unit,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
-    onLoginClick: () -> Unit
+    onLoginClick: () -> Unit,
+    onForgotPasswordClick: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -204,7 +208,9 @@ private fun LoginForm(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.secondary,
             textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onForgotPasswordClick() }
         )
     }
 }

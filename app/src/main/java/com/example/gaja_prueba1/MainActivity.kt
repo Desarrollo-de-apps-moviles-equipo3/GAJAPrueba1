@@ -36,6 +36,7 @@ import com.example.gaja_prueba1.ui.screen.ProfileScreen
 import com.example.gaja_prueba1.ui.theme.GAJAPrueba1Theme
 import kotlinx.coroutines.launch
 import com.example.gaja_prueba1.ui.screen.RecoverAccessScreen
+import com.example.gaja_prueba1.ui.screen.AdminShell
 
 class MainActivity : ComponentActivity() {
 
@@ -136,50 +137,60 @@ class MainActivity : ComponentActivity() {
                                 }
 
 
-                            MainShellScreen(
-                                userName = userName,
-                                otherTabs = { tab, onOpenReservations, onReserveClick ->
-                                    when (tab) {
-                                        BottomTab.Reservas -> {
-                                            MyReservationsScreen(
-                                                onBack = onOpenReservations
-
-                                            )
-                                        }
-
-                                        BottomTab.Perfil -> {
-                                            ProfileScreen(
-                                                fullName = userName,
-                                                email = session.email,
-                                                onMyReservations = onOpenReservations,
-                                                onPersonalData = {},
-                                                onChangePassword = {},
-                                                onLogout = {
-                                                    lifecycleScope.launch {
-                                                        try {
-                                                            sessionRepository.closeSession()
-                                                            activeSession = null
-                                                        } catch (exception: Exception) {
-                                                            android.util.Log.e(
-                                                                "GAJA_SESSION",
-                                                                "Error al cerrar la sesión",
-                                                                exception
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                            )
-                                        }
-
-                                        else -> {
-                                            ComingSoonScreen(
-                                                sectionName = tab.label
-                                            )
-                                        }
+                            val onLogout: () -> Unit = {
+                                lifecycleScope.launch {
+                                    try {
+                                        sessionRepository.closeSession()
+                                        activeSession = null
+                                    } catch (exception: Exception) {
+                                        android.util.Log.e(
+                                            "GAJA_SESSION",
+                                            "Error al cerrar la sesión",
+                                            exception
+                                        )
                                     }
                                 }
-                            )
+                            }
 
+                            if (session.role == "Administrador") {
+
+                                AdminShell(
+                                    userName = userName,
+                                    onLogout = onLogout
+                                )
+
+                            } else {
+
+                                MainShellScreen(
+                                    userName = userName,
+                                    otherTabs = { tab, onOpenReservations, onReserveClick ->
+                                        when (tab) {
+                                            BottomTab.Reservas -> {
+                                                MyReservationsScreen(
+                                                    onBack = onOpenReservations
+                                                )
+                                            }
+
+                                            BottomTab.Perfil -> {
+                                                ProfileScreen(
+                                                    fullName = userName,
+                                                    email = session.email,
+                                                    onMyReservations = onOpenReservations,
+                                                    onPersonalData = {},
+                                                    onChangePassword = {},
+                                                    onLogout = onLogout
+                                                )
+                                            }
+
+                                            else -> {
+                                                ComingSoonScreen(
+                                                    sectionName = tab.label
+                                                )
+                                            }
+                                        }
+                                    }
+                                )
+                            }
                         }
                     }
                 }

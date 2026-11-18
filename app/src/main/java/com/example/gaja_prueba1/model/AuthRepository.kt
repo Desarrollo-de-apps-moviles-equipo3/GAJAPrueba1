@@ -25,7 +25,8 @@ class AuthRepository {
             "externo@gaja.cl",
             "12345",
             "Institución externa"
-        )
+        ),
+        TestUser("admin@gaja.cl", "12345", "Administrador")
     )
 
     suspend fun loginUser(

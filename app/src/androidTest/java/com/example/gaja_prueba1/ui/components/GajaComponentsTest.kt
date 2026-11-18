@@ -24,6 +24,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.junit.Ignore
 
 @RunWith(AndroidJUnit4::class)
 class GajaComponentsTest {
@@ -54,8 +55,12 @@ class GajaComponentsTest {
         composeRule.onNodeWithText("Entrar").assertIsNotEnabled()
     }
 
+
     @Test
     fun boton_en_carga_oculta_el_texto_y_se_bloquea() {
+        // El indicador de carga anima sin parar; sin esto el test espera a que termine y se cuelga.
+        composeRule.mainClock.autoAdvance = false
+
         composeRule.setContent {
             GAJAPrueba1Theme { GajaButton(text = "Entrar", onClick = {}, loading = true) }
         }

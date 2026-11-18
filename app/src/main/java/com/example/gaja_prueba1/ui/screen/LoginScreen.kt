@@ -15,6 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.AssignmentTurnedIn
 import androidx.compose.material.icons.outlined.Lock
@@ -134,13 +135,15 @@ private fun LoginForm(
                 "Cadete",
                 "Oficial",
                 "Oficial de semana",
-                "Institución externa"
+                "Institución externa",
+                "Administrador"
             ),
             icons = listOf(
                 Icons.Outlined.Person,
                 Icons.Outlined.Shield,
                 Icons.Outlined.AssignmentTurnedIn,
-                Icons.Outlined.Apartment
+                Icons.Outlined.Apartment,
+                Icons.Outlined.AdminPanelSettings
             ),
             selectedIndex = selectedRole,
             onSelect = onRoleChange

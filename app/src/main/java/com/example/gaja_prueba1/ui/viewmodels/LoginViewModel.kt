@@ -28,7 +28,8 @@ class LoginViewModel(
         "Cadete",
         "Oficial",
         "Oficial de semana",
-        "Institución externa"
+        "Institución externa",
+        "Administrador"
     )
 
     private val _email = MutableStateFlow("")

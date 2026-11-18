@@ -134,7 +134,8 @@ private fun LoginForm(
                 "Cadete",
                 "Oficial",
                 "Oficial de semana",
-                "Institución externa"
+                "Institución externa",
+                "Administrador"
             ),
             icons = listOf(
                 Icons.Outlined.Person,

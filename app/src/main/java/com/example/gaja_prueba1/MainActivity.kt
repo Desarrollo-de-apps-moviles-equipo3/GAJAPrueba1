@@ -44,6 +44,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        lifecycleScope.launch {
+            com.example.gaja_prueba1.data.remote.ConnectionCheck.ping(
+                com.example.gaja_prueba1.data.remote.ApiConfig.CLIMA_URL
+            )
+        }
         val sessionRepository = SessionRepository(
             AppDatabase.get(applicationContext).sessionDao()
         )

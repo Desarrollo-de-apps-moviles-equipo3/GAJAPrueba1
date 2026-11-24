@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronLeft
@@ -69,6 +70,8 @@ fun MyReservationsScreen(
     var reservationToCancel by remember {
         mutableStateOf<ReservationResponse?>(null)
     }
+    var reservationDetail by remember {
+        mutableStateOf<ReservationResponse?>(null) }
 
     LaunchedEffect(email) {
         viewModel.loadReservations(email)
@@ -280,7 +283,8 @@ fun MyReservationsScreen(
                         ReservationCard(
                             reservation = reservation,
                             isPast = selectedTab == ReservationTab.PASADAS,
-                            onCancelClick = { reservationToCancel = reservation }
+                            onCancelClick = { reservationToCancel = reservation },
+                            onClick = { reservationDetail = reservation }
                         )
                     }
                 }
@@ -311,6 +315,35 @@ fun MyReservationsScreen(
                 }
             }
         )
+        reservationDetail?.let { reservation ->
+            AlertDialog(
+                onDismissRequest = { reservationDetail = null },
+                title = { Text(reservation.espacio) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Fecha: ${formatDate(reservation.fecha)}")
+                        Text("Horario: ${reservation.horario}")
+                        Text(
+                            "Estado: " + reservation.estado.replaceFirstChar {
+                                it.titlecase(Locale.forLanguageTag("es-CL"))
+                            }
+                        )
+                        Text("Motivo de la reserva: ${reservation.motivo}")
+                        if (reservation.estado.equals("RECHAZADA", ignoreCase = true)) {
+                            Text(
+                                text = "Motivo del rechazo: " +
+                                        (reservation.motivoRechazo?.takeIf { it.isNotBlank() } ?: "Sin motivo"),
+                                color = EspaciosPalette.Danger,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { reservationDetail = null }) { Text("Cerrar") }
+                }
+            )
+        }
     }
 }
 
@@ -318,10 +351,14 @@ fun MyReservationsScreen(
 private fun ReservationCard(
     reservation: ReservationResponse,
     isPast: Boolean,
-    onCancelClick: () -> Unit
+    onCancelClick: () -> Unit,
+    onClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = EspaciosPalette.White
@@ -397,10 +434,21 @@ private fun ReservationCard(
                 fontSize = 9.sp
             )
 
+            if (reservation.estado.equals("RECHAZADA", ignoreCase = true) &&
+                !reservation.motivoRechazo.isNullOrBlank()
+            ) {
+                Text(
+                    text = "Motivo del rechazo: ${reservation.motivoRechazo}",
+                    modifier = Modifier.padding(start = 52.dp, top = 4.dp),
+                    color = EspaciosPalette.Danger,
+                    fontSize = 10.sp
+                )
+            }
+
             val canCancel = !isPast && (
-                reservation.estado.equals("PENDIENTE", ignoreCase = true) ||
-                    reservation.estado.equals("APROBADA", ignoreCase = true)
-            )
+                    reservation.estado.equals("PENDIENTE", ignoreCase = true) ||
+                            reservation.estado.equals("APROBADA", ignoreCase = true)
+                    )
 
             if (canCancel) {
                 TextButton(

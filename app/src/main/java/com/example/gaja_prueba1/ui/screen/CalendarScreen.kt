@@ -99,8 +99,10 @@ fun CalendarContent(
     onNext: () -> Unit,
     onSelectDay: (String) -> Unit,
     onRetry: () -> Unit,
-    onReserveClick: (Space) -> Unit,
-    modifier: Modifier = Modifier
+    onReserveClick: ((Space) -> Unit)?,
+    modifier: Modifier = Modifier,
+    // Solo la agenda del admin lo usa: al tocar un día se abre su edición.
+    onDayClick: ((String) -> Unit)? = null
 ) {
     Column(
         modifier = modifier
@@ -162,14 +164,21 @@ fun CalendarContent(
                     }
 
                     if (state.mode == CalendarMode.Semana) {
-                        WeekView(space = space, state = state, onPrevious = onPrevious, onNext = onNext)
+                        WeekView(
+                            space = space,
+                            state = state,
+                            onPrevious = onPrevious,
+                            onNext = onNext,
+                            onDayClick = onDayClick
+                        )
                     } else {
                         MonthView(
                             space = space,
                             state = state,
                             onPrevious = onPrevious,
                             onNext = onNext,
-                            onSelectDay = onSelectDay
+                            onSelectDay = onSelectDay,
+                            onDayClick = onDayClick
                         )
                     }
                     Legend()
@@ -211,7 +220,7 @@ private fun SpaceChips(state: CalendarUiState, onSelectSpace: (String) -> Unit) 
 }
 
 @Composable
-private fun SelectedSpaceHeader(space: Space, onReserveClick: (Space) -> Unit) {
+private fun SelectedSpaceHeader(space: Space, onReserveClick: ((Space) -> Unit)?) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -229,7 +238,9 @@ private fun SelectedSpaceHeader(space: Space, onReserveClick: (Space) -> Unit) {
                 color = EspaciosPalette.Slate
             )
         }
-        GajaButton(text = "Reservar", onClick = { onReserveClick(space) }, modifier = Modifier.width(130.dp))
+        if (onReserveClick != null) {
+            GajaButton(text = "Reservar", onClick = { onReserveClick(space) }, modifier = Modifier.width(130.dp))
+        }
     }
 }
 
@@ -240,7 +251,8 @@ private fun WeekView(
     space: Space,
     state: CalendarUiState,
     onPrevious: () -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
+    onDayClick: ((String) -> Unit)?
 ) {
     val days = SpaceAvailability.weekDays(state.nowMillis, state.weekOffset)
     val title = "${ReservationValidator.formatDate(SpaceAvailability.parseIso(days.first()), "d MMM")} – " +
@@ -254,7 +266,7 @@ private fun WeekView(
             days.forEachIndexed { index, day ->
                 val isToday = day == state.todayIso
                 Column(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).clickableIf(onDayClick, day),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(DAY_INITIALS[index], fontSize = 11.sp, color = EspaciosPalette.Slate)
@@ -285,7 +297,8 @@ private fun WeekView(
                             .weight(1f)
                             .padding(2.dp)
                             .height(34.dp)
-                            .background(style.background, RoundedCornerShape(8.dp)),
+                            .background(style.background, RoundedCornerShape(8.dp))
+                            .clickableIf(onDayClick, day),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(style.symbol, color = style.content, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
@@ -306,7 +319,8 @@ private fun MonthView(
     state: CalendarUiState,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
-    onSelectDay: (String) -> Unit
+    onSelectDay: (String) -> Unit,
+    onDayClick: ((String) -> Unit)?
 ) {
     val grid = SpaceAvailability.monthGrid(state.nowMillis, state.monthOffset)
     Navigator(title = SpaceAvailability.monthLabel(grid), onPrevious = onPrevious, onNext = onNext)
@@ -344,7 +358,7 @@ private fun MonthView(
         }
     }
 
-    state.selectedDay?.let { DayDetail(day = it, space = space, state = state) }
+    state.selectedDay?.let { DayDetail(day = it, space = space, state = state, onEdit = onDayClick) }
 }
 
 @Composable
@@ -389,7 +403,7 @@ private fun MonthDayCell(
 }
 
 @Composable
-private fun DayDetail(day: String, space: Space, state: CalendarUiState) {
+private fun DayDetail(day: String, space: Space, state: CalendarUiState, onEdit: ((String) -> Unit)?) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -424,6 +438,9 @@ private fun DayDetail(day: String, space: Space, state: CalendarUiState) {
                     )
                 }
             }
+        if (onEdit != null && day >= state.todayIso) {
+            TextButton(onClick = { onEdit(day) }) { Text("Editar disponibilidad") }
+        }
     }
 }
 
@@ -464,3 +481,7 @@ private fun Legend() {
         }
     }
 }
+
+/** Hace clicable el elemento solo si hay una acción de día (agenda del admin). */
+private fun Modifier.clickableIf(action: ((String) -> Unit)?, day: String): Modifier =
+    if (action == null) this else this.clickable { action(day) }

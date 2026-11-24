@@ -25,6 +25,14 @@ import kotlinx.coroutines.launch
 
 enum class CalendarMode(val label: String) { Semana("Semana"), Mes("Mes") }
 
+/** Edición de un día del admin: [checked] son los horarios que quedarán bloqueados al guardar. */
+data class DayEditorState(
+    val day: String,
+    val checked: Set<String>,
+    val reason: String = "",
+    val isSaving: Boolean = false
+)
+
 data class CalendarUiState(
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
@@ -37,6 +45,8 @@ data class CalendarUiState(
     val weekOffset: Int = 0,
     val monthOffset: Int = 0,
     val selectedDay: String? = null,
+    val editor: DayEditorState? = null,
+    val message: String? = null,
     val nowMillis: Long = System.currentTimeMillis()
 ) {
     /** Solo los espacios habilitados: los deshabilitados no se pueden reservar. */
@@ -46,15 +56,16 @@ data class CalendarUiState(
     val todayIso: String get() = ReservationValidator.toIsoDate(nowMillis)
 }
 
-class CalendarViewModel(application: Application) : AndroidViewModel(application) {
+/** Calendario del usuario. [AdminAgendaViewModel] lo extiende para agregar el bloqueo de horarios. */
+open class CalendarViewModel(application: Application) : AndroidViewModel(application) {
 
     private val spacesRepository: SpacesRepository = RemoteSpacesRepository()
-    private val blocksRepository: BlocksRepository = RemoteBlocksRepository()
+    protected val blocksRepository: BlocksRepository = RemoteBlocksRepository()
     private val reservationRepository = ReservationRepository(
         AppDatabase.get(application).reservationDao()
     )
 
-    private val _uiState = MutableStateFlow(CalendarUiState())
+    protected val _uiState = MutableStateFlow(CalendarUiState())
     val uiState: StateFlow<CalendarUiState> = _uiState.asStateFlow()
 
     init {

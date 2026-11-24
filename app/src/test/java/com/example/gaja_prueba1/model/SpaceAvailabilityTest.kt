@@ -2,6 +2,7 @@ package com.example.gaja_prueba1.model
 
 import com.example.gaja_prueba1.data.ReservationEntity
 import com.example.gaja_prueba1.data.remote.BloqueoDto
+import com.example.gaja_prueba1.data.remote.BloqueoRequestDto
 import com.example.gaja_prueba1.data.remote.BloqueosApi
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -145,6 +146,8 @@ class SpaceAvailabilityTest {
     fun los_bloqueos_llegan_desde_el_servicio() = runBlocking {
         val api = object : BloqueosApi {
             override suspend fun getBloqueos() = listOf(block("cancha-1", "2026-11-26", slot, "Mantención"))
+            override suspend fun crear(spaceId: String, body: BloqueoRequestDto) = block(spaceId, body.date, body.timeSlot, body.reason)
+            override suspend fun eliminar(id: Long) {}
         }
         val result = RemoteBlocksRepository(api).getAll()
         assertEquals(1, result.size)

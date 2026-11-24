@@ -40,6 +40,8 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import com.example.gaja_prueba1.ui.screen.admin.AdminAgendaScreen
 import com.example.gaja_prueba1.ui.screen.admin.AdminSpacesAndCategoriesScreen
+import com.example.gaja_prueba1.ui.screen.admin.AdminReservationsScreen
+import com.example.gaja_prueba1.ui.screen.admin.AdminHomeScreen
 
 /** Pestañas de la barra inferior del administrador (según el Figma). */
 enum class AdminTab(val label: String, val icon: ImageVector) {
@@ -144,6 +146,18 @@ fun AdminShell(
                 AdminSpacesAndCategoriesScreen(modifier = Modifier.padding(innerPadding))
             } else if (menuDestination == null && tabs[selectedIndex] == AdminTab.Agenda) {
                 AdminAgendaScreen(modifier = Modifier.padding(innerPadding))
+            } else if (menuDestination == null && tabs[selectedIndex] == AdminTab.Reservas) {
+                AdminReservationsScreen(modifier = Modifier.padding(innerPadding))
+            } else if (menuDestination == null && tabs[selectedIndex] == AdminTab.Inicio) {
+                AdminHomeScreen(
+                    userName = userName,
+                    modifier = Modifier.padding(innerPadding),
+                    onSeeAllReservations = { selectedIndex = AdminTab.Reservas.ordinal },
+                    onBlockSchedule = { selectedIndex = AdminTab.Agenda.ordinal },
+                    onCreateUser = { selectedIndex = AdminTab.Perfiles.ordinal },
+                    onReports = { menuDestination = "Reportes" }
+                )
+            } else if (menuDestination == null && tabs[selectedIndex] == AdminTab.Reservas) {
             } else {
                 Box(
                     modifier = Modifier

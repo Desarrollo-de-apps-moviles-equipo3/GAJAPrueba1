@@ -118,6 +118,13 @@ fun MainShellScreen(
                                 onReserveClick(space)
                             }
                         )
+                    } else if (tab == BottomTab.Calendario) {
+                        CalendarScreen(
+                            onReserveClick = { space ->
+                                reservationSpace = space
+                                onReserveClick(space)
+                            }
+                        )
                     } else {
                         otherTabs(
                             tab,

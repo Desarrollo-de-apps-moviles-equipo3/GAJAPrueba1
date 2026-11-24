@@ -38,7 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import com.example.gaja_prueba1.ui.screen.admin.AdminSpacesScreen
+import com.example.gaja_prueba1.ui.screen.admin.AdminSpacesAndCategoriesScreen
 
 /** Pestañas de la barra inferior del administrador (según el Figma). */
 enum class AdminTab(val label: String, val icon: ImageVector) {
@@ -140,7 +140,7 @@ fun AdminShell(
             }
         ) { innerPadding ->
             if (menuDestination == "Espacios y categorías") {
-                AdminSpacesScreen(modifier = Modifier.padding(innerPadding))
+                AdminSpacesAndCategoriesScreen(modifier = Modifier.padding(innerPadding))
             } else {
                 Box(
                     modifier = Modifier

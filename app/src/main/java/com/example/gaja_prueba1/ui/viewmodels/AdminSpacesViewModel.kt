@@ -72,6 +72,19 @@ class AdminSpacesViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
+    /** Recarga sin spinner: se usa al volver desde "Categorías", por si cambió algún nombre. */
+    fun refreshQuietly() {
+        viewModelScope.launch {
+            try {
+                refresh(repository)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Si falla, se queda lo que ya estaba en pantalla.
+            }
+        }
+    }
+
     private suspend fun refresh(repo: AdminSpacesRepository) {
         val spaces = repo.getAll()
         val categories = repo.categories()

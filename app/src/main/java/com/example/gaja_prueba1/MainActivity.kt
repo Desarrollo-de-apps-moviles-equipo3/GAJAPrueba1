@@ -46,7 +46,7 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             com.example.gaja_prueba1.data.remote.ConnectionCheck.ping(
-                com.example.gaja_prueba1.data.remote.ApiConfig.CLIMA_URL
+                com.example.gaja_prueba1.data.remote.ApiConfig.RESERVAS_URL
             )
         }
         val sessionRepository = SessionRepository(

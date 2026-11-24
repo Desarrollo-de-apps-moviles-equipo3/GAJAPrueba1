@@ -3,13 +3,13 @@ package com.example.gaja_prueba1.ui.viewmodels
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.gaja_prueba1.data.AppDatabase
-import com.example.gaja_prueba1.data.ReservationEntity
 import com.example.gaja_prueba1.data.remote.BloqueoDto
 import com.example.gaja_prueba1.model.BlocksRepository
+import com.example.gaja_prueba1.model.Booking
+import com.example.gaja_prueba1.model.BookingsRepository
 import com.example.gaja_prueba1.model.RemoteBlocksRepository
+import com.example.gaja_prueba1.model.RemoteBookingsRepository
 import com.example.gaja_prueba1.model.RemoteSpacesRepository
-import com.example.gaja_prueba1.model.ReservationRepository
 import com.example.gaja_prueba1.model.Space
 import com.example.gaja_prueba1.model.SpacesRepository
 import com.example.gaja_prueba1.model.filterSpaces
@@ -38,7 +38,7 @@ data class CalendarUiState(
     val errorMessage: String? = null,
     val spaces: List<Space> = emptyList(),
     val blocks: List<BloqueoDto> = emptyList(),
-    val reservations: List<ReservationEntity> = emptyList(),
+    val reservations: List<Booking> = emptyList(),
     val query: String = "",
     val selectedSpaceId: String? = null,
     val mode: CalendarMode = CalendarMode.Semana,
@@ -61,21 +61,10 @@ open class CalendarViewModel(application: Application) : AndroidViewModel(applic
 
     private val spacesRepository: SpacesRepository = RemoteSpacesRepository()
     protected val blocksRepository: BlocksRepository = RemoteBlocksRepository()
-    private val reservationRepository = ReservationRepository(
-        AppDatabase.get(application).reservationDao()
-    )
+    private val bookingsRepository: BookingsRepository = RemoteBookingsRepository()
 
     protected val _uiState = MutableStateFlow(CalendarUiState())
     val uiState: StateFlow<CalendarUiState> = _uiState.asStateFlow()
-
-    init {
-        // Las reservas del usuario viven en Room: el calendario se actualiza solo cuando reserva algo.
-        viewModelScope.launch {
-            reservationRepository.observeAll().collect { list ->
-                _uiState.update { it.copy(reservations = list) }
-            }
-        }
-    }
 
     /** Pide espacios y bloqueos al servicio. La pantalla lo llama cada vez que se abre el Calendario. */
     fun refresh() {
@@ -84,10 +73,12 @@ open class CalendarViewModel(application: Application) : AndroidViewModel(applic
                 it.copy(isLoading = it.spaces.isEmpty(), errorMessage = null, nowMillis = System.currentTimeMillis())
             }
             try {
-                val (spaces, blocks) = coroutineScope {
+                // Espacios y bloqueos vienen del servicio de espacios; las reservas, del de reservas.
+                val (spaces, blocks, bookings) = coroutineScope {
                     val s = async { spacesRepository.getSpaces() }
                     val b = async { blocksRepository.getAll() }
-                    s.await() to b.await()
+                    val r = async { bookingsRepository.getActive() }
+                    Triple(s.await(), b.await(), r.await())
                 }
                 _uiState.update { state ->
                     val stillValid = state.selectedSpaceId
@@ -96,6 +87,7 @@ open class CalendarViewModel(application: Application) : AndroidViewModel(applic
                         isLoading = false,
                         spaces = spaces,
                         blocks = blocks,
+                        reservations = bookings,
                         selectedSpaceId = stillValid ?: spaces.firstOrNull { it.available }?.id
                     )
                 }

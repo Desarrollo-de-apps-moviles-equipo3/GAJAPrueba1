@@ -3,11 +3,15 @@ package com.example.gaja_prueba1.ui.viewmodels
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.gaja_prueba1.model.BlocksRepository
+import com.example.gaja_prueba1.model.RemoteBlocksRepository
 import com.example.gaja_prueba1.model.RemoteReservationsRepository
 import com.example.gaja_prueba1.model.Space
 import com.example.gaja_prueba1.validation.ReservationValidator
 import com.example.gaja_prueba1.data.remote.CreateReservationRequest
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,6 +40,9 @@ data class ReservationUiState(
 
 class ReservationViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = RemoteReservationsRepository()
+
+    // Los horarios que el administrador bloqueó viven en el servicio de espacios.
+    private val blocksRepository: BlocksRepository = RemoteBlocksRepository()
 
     private val _uiState = MutableStateFlow(ReservationUiState())
     val uiState: StateFlow<ReservationUiState> = _uiState.asStateFlow()
@@ -77,7 +84,13 @@ class ReservationViewModel(application: Application) : AndroidViewModel(applicat
 
         availabilityJob = viewModelScope.launch {
             try {
-                val occupied = repository.horariosOcupados(isoDate, space.name)
+                // Un horario no se puede elegir si ya lo reservaron (servicio de reservas)
+                // o si el administrador lo bloqueó (servicio de espacios).
+                val occupied = coroutineScope {
+                    val reserved = async { repository.horariosOcupados(isoDate, space.name) }
+                    val blocked = async { blockedSlots(space, isoDate) }
+                    reserved.await() + blocked.await()
+                }
 
                 _uiState.update { current ->
                     if (current.dateMillis != millis || current.space?.id != space.id) {
@@ -104,6 +117,12 @@ class ReservationViewModel(application: Application) : AndroidViewModel(applicat
             }
         }
     }
+
+    private suspend fun blockedSlots(space: Space, isoDate: String): Set<String> =
+        blocksRepository.getAll()
+            .filter { it.spaceId == space.id && it.date == isoDate }
+            .map { it.timeSlot.trim() }
+            .toSet()
 
     fun validateDateSelection(): Boolean {
         val error = ReservationValidator.validateDate(_uiState.value.dateMillis)

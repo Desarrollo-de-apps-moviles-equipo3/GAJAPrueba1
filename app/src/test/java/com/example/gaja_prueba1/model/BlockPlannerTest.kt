@@ -1,6 +1,5 @@
 package com.example.gaja_prueba1.model
 
-import com.example.gaja_prueba1.data.ReservationEntity
 import com.example.gaja_prueba1.data.remote.BloqueoDto
 import com.example.gaja_prueba1.data.remote.BloqueoRequestDto
 import com.example.gaja_prueba1.data.remote.BloqueosApi
@@ -25,7 +24,7 @@ class BlockPlannerTest {
         BloqueoDto(id, spaceId, date, slot, null)
 
     private fun reservation(space: String, date: String, slot: String) =
-        ReservationEntity(space = space, date = date, timeSlot = slot, reason = "Entrenamiento")
+        Booking(space = space, date = date, timeSlot = slot, reason = "Entrenamiento")
 
     @Test
     fun el_editor_parte_marcado_con_los_horarios_ya_bloqueados() {

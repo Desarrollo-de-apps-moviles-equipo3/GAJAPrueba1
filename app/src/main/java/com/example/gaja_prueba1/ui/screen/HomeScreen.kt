@@ -55,6 +55,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -74,6 +75,7 @@ import com.example.gaja_prueba1.model.formatDistance
 import com.example.gaja_prueba1.ui.viewmodels.HomeUiState
 import com.example.gaja_prueba1.ui.viewmodels.HomeViewModel
 import com.example.gaja_prueba1.ui.viewmodels.NearbyState
+import com.example.gaja_prueba1.ui.viewmodels.WeatherStatus
 import com.example.gaja_prueba1.util.NearbyLocationProvider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.lerp
@@ -96,6 +98,8 @@ fun HomeScreen(
         Manifest.permission.ACCESS_FINE_LOCATION,
         Manifest.permission.ACCESS_COARSE_LOCATION
     )
+
+    LaunchedEffect(Unit) { viewModel.refreshSpaces() }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -126,7 +130,8 @@ fun HomeScreen(
                 Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
-        }
+        },
+        onWeatherRetry = { viewModel.loadWeather() }
     )
 }
 
@@ -145,7 +150,8 @@ fun HomeContent(
     onReserveClick: (Space) -> Unit,
     onNearbyClick: () -> Unit = {},
     onNearbyClear: () -> Unit = {},
-    onOpenSettings: () -> Unit = {}
+    onOpenSettings: () -> Unit = {},
+    onWeatherRetry: () -> Unit = {}
 ) {
     val scheme = MaterialTheme.colorScheme
     val gradientTop = lerp(scheme.primary, scheme.secondary, 0.2f)
@@ -235,6 +241,25 @@ fun HomeContent(
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
             modifier = Modifier.padding(horizontal = 24.dp)
         )
+        if (state.weatherStatus == WeatherStatus.Error && !state.isLoading && state.errorMessage == null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Sin conexión: no pudimos cargar el clima.",
+                    color = scheme.onPrimary.copy(alpha = 0.8f),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = onWeatherRetry) {
+                    Text("Reintentar", color = scheme.onPrimary)
+                }
+            }
+        }
         Spacer(Modifier.height(12.dp))
 
         when {
@@ -273,6 +298,7 @@ fun HomeContent(
                         SpaceCard(
                             space = space,
                             distanceText = state.distanceTo(space)?.let(::formatDistance),
+                            weatherText = state.weather[space.id]?.summary,
                             onReserveClick = { onReserveClick(space) },
                             modifier = Modifier.animateItem()
                         )
@@ -437,7 +463,8 @@ private fun SpaceCard(
     space: Space,
     onReserveClick: () -> Unit,
     modifier: Modifier = Modifier,
-    distanceText: String? = null
+    distanceText: String? = null,
+    weatherText: String? = null
 ) {
     val scheme = MaterialTheme.colorScheme
     val baseColor = colorFromHex(space.colorHex, fallback = scheme.secondary)
@@ -484,6 +511,14 @@ private fun SpaceCard(
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
+            if (weatherText != null) {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = weatherText,
+                    color = scheme.secondary,
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium)
+                )
+            }
             Spacer(Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),

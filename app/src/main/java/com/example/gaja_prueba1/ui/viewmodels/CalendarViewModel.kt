@@ -1,7 +1,6 @@
 package com.example.gaja_prueba1.ui.viewmodels
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gaja_prueba1.data.remote.BloqueoDto
 import com.example.gaja_prueba1.model.BlocksRepository
@@ -57,11 +56,11 @@ data class CalendarUiState(
 }
 
 /** Calendario del usuario. [AdminAgendaViewModel] lo extiende para agregar el bloqueo de horarios. */
-open class CalendarViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val spacesRepository: SpacesRepository = RemoteSpacesRepository()
-    protected val blocksRepository: BlocksRepository = RemoteBlocksRepository()
+open class CalendarViewModel(
+    private val spacesRepository: SpacesRepository = RemoteSpacesRepository(),
+    protected val blocksRepository: BlocksRepository = RemoteBlocksRepository(),
     private val bookingsRepository: BookingsRepository = RemoteBookingsRepository()
+) : ViewModel() {
 
     protected val _uiState = MutableStateFlow(CalendarUiState())
     val uiState: StateFlow<CalendarUiState> = _uiState.asStateFlow()

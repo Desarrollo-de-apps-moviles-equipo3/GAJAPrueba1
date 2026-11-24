@@ -1,8 +1,13 @@
 package com.example.gaja_prueba1.ui.viewmodels
 
-import android.app.Application
 import androidx.lifecycle.viewModelScope
 import com.example.gaja_prueba1.model.BlockPlanner
+import com.example.gaja_prueba1.model.BlocksRepository
+import com.example.gaja_prueba1.model.BookingsRepository
+import com.example.gaja_prueba1.model.RemoteBlocksRepository
+import com.example.gaja_prueba1.model.RemoteBookingsRepository
+import com.example.gaja_prueba1.model.RemoteSpacesRepository
+import com.example.gaja_prueba1.model.SpacesRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -11,7 +16,11 @@ import kotlinx.coroutines.launch
  * Agenda del administrador: es el mismo calendario del usuario (semana, mes, buscar espacio)
  * más la edición de un día para bloquear o desbloquear horarios en el servicio.
  */
-class AdminAgendaViewModel(application: Application) : CalendarViewModel(application) {
+class AdminAgendaViewModel(
+    spacesRepository: SpacesRepository = RemoteSpacesRepository(),
+    blocksRepository: BlocksRepository = RemoteBlocksRepository(),
+    bookingsRepository: BookingsRepository = RemoteBookingsRepository()
+) : CalendarViewModel(spacesRepository, blocksRepository, bookingsRepository) {
 
     fun onMessageShown() = _uiState.update { it.copy(message = null) }
 

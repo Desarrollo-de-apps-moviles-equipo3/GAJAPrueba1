@@ -1,7 +1,6 @@
 package com.example.gaja_prueba1.ui.viewmodels
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gaja_prueba1.model.CategoriesRepository
 import com.example.gaja_prueba1.model.Category
@@ -33,9 +32,9 @@ data class AdminCategoriesUiState(
     val message: String? = null
 )
 
-class AdminCategoriesViewModel(application: Application) : AndroidViewModel(application) {
-
+class AdminCategoriesViewModel(
     private val repository: CategoriesRepository = RemoteCategoriesRepository()
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AdminCategoriesUiState())
     val uiState: StateFlow<AdminCategoriesUiState> = _uiState.asStateFlow()

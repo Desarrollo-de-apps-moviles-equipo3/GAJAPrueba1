@@ -168,11 +168,11 @@ class MainActivity : ComponentActivity() {
 
                                 MainShellScreen(
                                     userName = userName,
-                                    otherTabs = { tab, onOpenReservations, onReserveClick ->
+                                    otherTabs = { tab, onOpenReservations, onBackHome, onReserveClick ->
                                         when (tab) {
                                             BottomTab.Reservas -> {
                                                 MyReservationsScreen(
-                                                    onBack = onOpenReservations
+                                                    onBack = onBackHome
                                                 )
                                             }
 

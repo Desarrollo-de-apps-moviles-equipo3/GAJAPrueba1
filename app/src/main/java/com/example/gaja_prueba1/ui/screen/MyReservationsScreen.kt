@@ -67,15 +67,27 @@ fun MyReservationsScreen(
 
     val selectedTab = ReservationTab.valueOf(selectedTabName)
 
-    // Las solicitudes existentes son pendientes de aprobación.
-    // Sin un estado proveniente del servicio externo no podemos
-    // clasificarlas como confirmadas o canceladas.
-    val pendingReservations = reservations
 
+// Obtener la fecha actual
+    val today = SimpleDateFormat(
+        "yyyy-MM-dd",
+        Locale.ROOT
+    ).format(java.util.Date())
+
+// Separar reservas según su fecha
+    val pendingReservations = reservations.filter {
+        it.date >= today
+    }
+
+    val pastReservations = reservations.filter {
+        it.date < today
+    }
+
+// Determinar qué reservas mostrar
     val visibleReservations = when (selectedTab) {
         ReservationTab.PENDIENTES -> pendingReservations
         ReservationTab.PROXIMAS -> emptyList()
-        ReservationTab.PASADAS -> emptyList()
+        ReservationTab.PASADAS -> pastReservations
         ReservationTab.CANCELADAS -> emptyList()
     }
 
@@ -133,6 +145,9 @@ fun MyReservationsScreen(
                 val tabCount = when (tab) {
                     ReservationTab.PENDIENTES ->
                         pendingReservations.size
+
+                    ReservationTab.PASADAS ->
+                        pastReservations.size
 
                     else -> 0
                 }
@@ -241,7 +256,10 @@ fun MyReservationsScreen(
                     items = visibleReservations,
                     key = { reservation -> reservation.id }
                 ) { reservation ->
-                    PendingReservationCard(reservation)
+                    PendingReservationCard(
+                        reservation = reservation,
+                        isPast = selectedTab == ReservationTab.PASADAS
+                    )
                 }
             }
         }
@@ -250,7 +268,8 @@ fun MyReservationsScreen(
 
 @Composable
 private fun PendingReservationCard(
-    reservation: ReservationEntity
+    reservation: ReservationEntity,
+    isPast: Boolean = false
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -308,7 +327,7 @@ private fun PendingReservationCard(
                         color = EspaciosPalette.Beige
                     ) {
                         Text(
-                            text = "Pendiente",
+                            text = if (isPast) "Fecha finalizada" else "Pendiente",
                             modifier = Modifier.padding(
                                 horizontal = 9.dp,
                                 vertical = 4.dp
@@ -327,7 +346,11 @@ private fun PendingReservationCard(
             }
 
             Text(
-                text = "Solicitud #${reservation.id} · En revisión",
+                text = if (isPast) {
+                    "Reserva #${reservation.id} · Fecha finalizada"
+                } else {
+                    "Solicitud #${reservation.id} · En revisión"
+                },
                 modifier = Modifier.padding(
                     start = 52.dp,
                     top = 8.dp

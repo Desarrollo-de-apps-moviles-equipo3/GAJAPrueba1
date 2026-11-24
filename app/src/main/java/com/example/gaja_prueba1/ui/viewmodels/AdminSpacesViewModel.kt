@@ -4,8 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gaja_prueba1.model.AdminSpacesRepository
-import com.example.gaja_prueba1.model.FakeSpacesRepository
-import com.example.gaja_prueba1.model.InMemoryAdminSpacesRepository
+import com.example.gaja_prueba1.model.RemoteAdminSpacesRepository
 import com.example.gaja_prueba1.model.Space
 import com.example.gaja_prueba1.validation.AdminSpaceValidator
 import kotlinx.coroutines.CancellationException
@@ -47,7 +46,8 @@ data class AdminSpacesUiState(
 
 class AdminSpacesViewModel(application: Application) : AndroidViewModel(application) {
 
-    private var repository: AdminSpacesRepository? = null
+    // N5 conectado al servicio: lo que el admin cambia queda guardado y lo ve el usuario en el Inicio.
+    private val repository: AdminSpacesRepository = RemoteAdminSpacesRepository()
 
     private val _uiState = MutableStateFlow(AdminSpacesUiState())
     val uiState: StateFlow<AdminSpacesUiState> = _uiState.asStateFlow()
@@ -60,16 +60,27 @@ class AdminSpacesViewModel(application: Application) : AndroidViewModel(applicat
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
-                val repo = repository ?: InMemoryAdminSpacesRepository(
-                    FakeSpacesRepository(getApplication(), delayMillis = 300).getSpaces()
-                ).also { repository = it }
-                refresh(repo)
+                refresh(repository)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                android.util.Log.e("GAJA_ESPACIOS", "No se pudo cargar los espacios", e)
                 _uiState.update {
                     it.copy(isLoading = false, errorMessage = "No pudimos cargar los espacios. Inténtalo de nuevo.")
                 }
+            }
+        }
+    }
+
+    /** Recarga sin spinner: se usa al volver desde "Categorías", por si cambió algún nombre. */
+    fun refreshQuietly() {
+        viewModelScope.launch {
+            try {
+                refresh(repository)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Si falla, se queda lo que ya estaba en pantalla.
             }
         }
     }
@@ -128,7 +139,7 @@ class AdminSpacesViewModel(application: Application) : AndroidViewModel(applicat
             return
         }
 
-        val repo = repository ?: return
+        val repo = repository
         updateForm { it.copy(isSaving = true) }
         viewModelScope.launch {
             try {
@@ -185,7 +196,7 @@ class AdminSpacesViewModel(application: Application) : AndroidViewModel(applicat
     fun onEnable(space: Space) = changeAvailability(space, available = true, done = "Espacio habilitado")
 
     private fun changeAvailability(space: Space, available: Boolean, done: String) {
-        val repo = repository ?: return
+        val repo = repository
         viewModelScope.launch {
             try {
                 repo.setAvailable(space.id, available)
@@ -206,7 +217,7 @@ class AdminSpacesViewModel(application: Application) : AndroidViewModel(applicat
 
     fun onDeleteConfirmed() {
         val space = _uiState.value.pendingDelete ?: return
-        val repo = repository ?: return
+        val repo = repository
         _uiState.update { it.copy(pendingDelete = null) }
         viewModelScope.launch {
             try {

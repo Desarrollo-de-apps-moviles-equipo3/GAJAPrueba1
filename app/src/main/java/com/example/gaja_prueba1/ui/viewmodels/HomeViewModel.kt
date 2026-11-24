@@ -4,9 +4,12 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gaja_prueba1.data.AppDatabase
-import com.example.gaja_prueba1.model.FakeSpacesRepository
+import com.example.gaja_prueba1.model.RemoteSpacesRepository
+import com.example.gaja_prueba1.model.RemoteWeatherRepository
 import com.example.gaja_prueba1.model.Space
+import com.example.gaja_prueba1.model.SpaceWeather
 import com.example.gaja_prueba1.model.SpacesRepository
+import com.example.gaja_prueba1.model.WeatherRepository
 import com.example.gaja_prueba1.model.distanceFrom
 import com.example.gaja_prueba1.model.filterSpaces
 import com.example.gaja_prueba1.model.sortByDistance
@@ -22,6 +25,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class UserLocation(val latitude: Double, val longitude: Double)
+
+enum class WeatherStatus { Idle, Loading, Loaded, Error }
 
 enum class NearbyState {
     Idle,
@@ -41,7 +46,9 @@ data class HomeUiState(
     val upcomingReservations: Int = 0,
     val pastReservations: Int = 0,
     val userLocation: UserLocation? = null,
-    val nearby: NearbyState = NearbyState.Idle
+    val nearby: NearbyState = NearbyState.Idle,
+    val weather: Map<String, SpaceWeather> = emptyMap(),
+    val weatherStatus: WeatherStatus = WeatherStatus.Idle
 ) {
     val visibleSpaces: List<Space>
         get() {
@@ -56,7 +63,9 @@ data class HomeUiState(
 }
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository: SpacesRepository = FakeSpacesRepository(application)
+    // N3: los espacios vienen del microservicio. N2: el clima, de la API externa Open-Meteo.
+    private val repository: SpacesRepository = RemoteSpacesRepository()
+    private val weatherRepository: WeatherRepository = RemoteWeatherRepository()
     private val reservationDao = AppDatabase.get(application).reservationDao()
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -93,6 +102,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                         allSpaces = spaces
                     )
                 }
+                loadWeather(spaces)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -102,6 +112,28 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                         errorMessage = "No pudimos cargar los espacios. Revisa tu conexión e inténtalo de nuevo."
                     )
                 }
+            }
+        }
+    }
+
+    fun refreshSpaces() {
+        if (!_uiState.value.isLoading) loadSpaces()
+    }
+
+    /**
+     * N2: el clima es un extra. Si falla (sin conexión), el Inicio sigue funcionando
+     * y solo muestra un aviso.
+     */
+    fun loadWeather(spaces: List<Space> = _uiState.value.allSpaces) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(weatherStatus = WeatherStatus.Loading) }
+            try {
+                val weather = weatherRepository.weatherFor(spaces)
+                _uiState.update { it.copy(weather = weather, weatherStatus = WeatherStatus.Loaded) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update { it.copy(weatherStatus = WeatherStatus.Error) }
             }
         }
     }

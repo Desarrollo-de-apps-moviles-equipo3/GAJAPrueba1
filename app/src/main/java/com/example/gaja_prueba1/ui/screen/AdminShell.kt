@@ -38,6 +38,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import com.example.gaja_prueba1.ui.screen.admin.AdminAgendaScreen
+import com.example.gaja_prueba1.ui.screen.admin.AdminSpacesAndCategoriesScreen
 
 /** Pestañas de la barra inferior del administrador (según el Figma). */
 enum class AdminTab(val label: String, val icon: ImageVector) {
@@ -138,18 +140,24 @@ fun AdminShell(
                 }
             }
         ) { innerPadding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+            if (menuDestination == "Espacios y categorías") {
+                AdminSpacesAndCategoriesScreen(modifier = Modifier.padding(innerPadding))
+            } else if (menuDestination == null && tabs[selectedIndex] == AdminTab.Agenda) {
+                AdminAgendaScreen(modifier = Modifier.padding(innerPadding))
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text("Hola, $userName")
-                    Text(menuDestination ?: tabs[selectedIndex].label)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text("Hola, $userName")
+                        Text(menuDestination ?: tabs[selectedIndex].label)
+                    }
                 }
             }
         }

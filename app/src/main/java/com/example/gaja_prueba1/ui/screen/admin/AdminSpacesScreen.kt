@@ -68,6 +68,7 @@ fun AdminSpacesScreen(
     viewModel: AdminSpacesViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    LaunchedEffect(Unit) { viewModel.refreshQuietly() }
     val actions = AdminSpacesActions(
         onShowDisabled = viewModel::onShowDisabled,
         onRetry = viewModel::load,

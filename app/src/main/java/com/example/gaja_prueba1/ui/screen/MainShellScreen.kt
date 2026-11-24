@@ -53,8 +53,14 @@ enum class BottomTab(val label: String, val icon: ImageVector) {
 fun MainShellScreen(
     userName: String,
     onReserveClick: (Space) -> Unit = {},
-    otherTabs: @Composable (BottomTab, () -> Unit, (Space) -> Unit) -> Unit =
-        { tab, _, _ -> ComingSoonScreen(sectionName = tab.label) }
+    otherTabs: @Composable (
+        BottomTab,
+        () -> Unit,
+        () -> Unit,
+        (Space) -> Unit
+    ) -> Unit = { tab, _, _, _ ->
+        ComingSoonScreen(sectionName = tab.label)
+    }
 ) {
     val tabs = BottomTab.entries
     var selectedIndex by rememberSaveable { mutableStateOf(0) }
@@ -112,10 +118,21 @@ fun MainShellScreen(
                                 onReserveClick(space)
                             }
                         )
+                    } else if (tab == BottomTab.Calendario) {
+                        CalendarScreen(
+                            onReserveClick = { space ->
+                                reservationSpace = space
+                                onReserveClick(space)
+                            }
+                        )
                     } else {
                         otherTabs(
                             tab,
+                            // Ir a Mis reservas
                             { selectedIndex = tabs.indexOf(BottomTab.Reservas) },
+                            // Volver a Inicio
+                            { selectedIndex = tabs.indexOf(BottomTab.Inicio) },
+                            // Solicitar una reserva
                             { space ->
                                 reservationSpace = space
                                 onReserveClick(space)

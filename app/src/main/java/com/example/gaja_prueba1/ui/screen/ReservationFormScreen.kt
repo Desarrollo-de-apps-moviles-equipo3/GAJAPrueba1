@@ -7,8 +7,6 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -31,10 +29,12 @@ import com.example.gaja_prueba1.ui.viewmodels.ReservationViewModel
 import com.example.gaja_prueba1.validation.ReservationValidator
 import java.util.Calendar
 import java.util.Locale
+import java.util.TimeZone
 
 @Composable
 fun ReservationFormScreen(
     space: Space,
+    userEmail: String,
     onBack: () -> Unit,
     onDone: () -> Unit,
     onViewReservations: () -> Unit,
@@ -42,7 +42,10 @@ fun ReservationFormScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     var detailsStep by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(space.id) { viewModel.start(space) }
+
+    LaunchedEffect(space.id, userEmail) {
+        viewModel.start(space, userEmail)
+    }
 
     if (state.saved) {
         ReservationSuccessScreen(
@@ -120,115 +123,98 @@ private fun StepHeader(activeStep: Int) {
     }
 }
 
-private fun allowedDates(): List<Long> = (0..ReservationValidator.MAX_DAYS_AHEAD).map { offset ->
-    Calendar.getInstance().apply {
-        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-        add(Calendar.DAY_OF_YEAR, offset)
+private fun utcMidnightForLocalDate(localMillis: Long): Long {
+    val local = Calendar.getInstance().apply { timeInMillis = localMillis }
+    return Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+        clear()
+        set(local.get(Calendar.YEAR), local.get(Calendar.MONTH), local.get(Calendar.DAY_OF_MONTH))
+    }.timeInMillis
+}
+
+private fun localMidnightFromUtcDate(utcMillis: Long): Long {
+    val utc = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = utcMillis }
+    return Calendar.getInstance().apply {
+        clear()
+        set(utc.get(Calendar.YEAR), utc.get(Calendar.MONTH), utc.get(Calendar.DAY_OF_MONTH))
     }.timeInMillis
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 private fun DateStep(
     selectedMillis: Long?,
     error: String?,
     onSelect: (Long) -> Unit,
     onNext: () -> Unit
 ) {
-    val dates = remember { allowedDates() }
-    val selected = selectedMillis ?: dates.first()
-    val monthLabel = remember(selected) { ReservationValidator.formatDate(selected, "MMMM yyyy").replaceFirstChar { it.titlecase(Locale("es", "CL")) } }
+    var showDatePicker by rememberSaveable { mutableStateOf(false) }
+    val today = remember { ReservationValidator.startOfDay(System.currentTimeMillis()).timeInMillis }
+    val lastAllowed = remember(today) {
+        (ReservationValidator.startOfDay(today).clone() as Calendar).apply {
+            add(Calendar.DAY_OF_YEAR, ReservationValidator.MAX_DAYS_AHEAD)
+        }.timeInMillis
+    }
+    val selected = selectedMillis
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = selected?.let(::utcMidnightForLocalDate) ?: utcMidnightForLocalDate(today),
+        selectableDates = object : SelectableDates {
+            private val firstUtcDay = utcMidnightForLocalDate(today)
+            private val lastUtcDay = utcMidnightForLocalDate(lastAllowed)
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+                utcTimeMillis in firstUtcDay..lastUtcDay
+        }
+    )
 
     Column(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Filled.CalendarMonth, null, tint = EspaciosPalette.Steel)
-            Spacer(Modifier.width(8.dp))
-            Text(monthLabel, color = EspaciosPalette.Navy, fontWeight = FontWeight.SemiBold)
-        }
-
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+        Text("Selecciona una fecha", modifier = Modifier.padding(start = 20.dp, top = 22.dp, bottom = 12.dp), color = EspaciosPalette.Navy, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+        OutlinedButton(
+            onClick = { showDatePicker = true },
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp).height(58.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = EspaciosPalette.Navy)
         ) {
-            dates.take(7).forEach { millis ->
-                val cal = Calendar.getInstance().apply {
-                    timeInMillis = millis
-                }
-
-                val isSelected =
-                    ReservationValidator.startOfDay(millis).timeInMillis ==
-                            ReservationValidator.startOfDay(selected).timeInMillis
-
-                Column(
-                    modifier = Modifier
-                        .clickable {
-                            onSelect(millis)
-                        }
-                        .padding(4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        ReservationValidator
-                            .formatDate(millis, "EEEEE")
-                            .uppercase(Locale("es", "CL")),
-                        color = EspaciosPalette.Slate,
-                        fontSize = 10.sp
-                    )
-
-                    Spacer(Modifier.height(7.dp))
-
-                    Box(
-                        Modifier
-                            .size(30.dp)
-                            .background(
-                                if (isSelected) {
-                                    EspaciosPalette.Navy
-                                } else {
-                                    EspaciosPalette.White
-                                },
-                                CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            cal.get(Calendar.DAY_OF_MONTH).toString(),
-                            color = if (isSelected) {
-                                EspaciosPalette.White
-                            } else {
-                                EspaciosPalette.Navy
-                            },
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-            }
+            Icon(Icons.Filled.CalendarMonth, contentDescription = null, tint = EspaciosPalette.Steel)
+            Spacer(Modifier.width(10.dp))
+            Text(
+                selected?.let { ReservationValidator.formatDate(it).replaceFirstChar { c -> c.titlecase(Locale("es", "CL")) } }
+                    ?: "Elegir fecha",
+                modifier = Modifier.weight(1f)
+            )
+            Text("Cambiar", color = EspaciosPalette.Steel, fontSize = 12.sp)
         }
-
-        Text("Selecciona una fecha", modifier = Modifier.padding(start = 20.dp, top = 18.dp, bottom = 8.dp), color = EspaciosPalette.Navy, fontWeight = FontWeight.Medium, fontSize = 14.sp)
-        LazyColumn(
-            modifier = Modifier.weight(1f).padding(horizontal = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            items(dates) { millis ->
-                val isSelected = ReservationValidator.startOfDay(millis).timeInMillis == ReservationValidator.startOfDay(selected).timeInMillis
-                Row(
-                    Modifier.fillMaxWidth().background(if (isSelected) EspaciosPalette.SkyCard else EspaciosPalette.White, RoundedCornerShape(10.dp))
-                        .clickable { onSelect(millis) }.padding(horizontal = 12.dp, vertical = 13.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(ReservationValidator.formatDate(millis), modifier = Modifier.weight(1f), color = EspaciosPalette.Navy, fontSize = 13.sp)
-                    if (millis == dates.first()) Text("Hoy", color = EspaciosPalette.Steel, fontSize = 11.sp)
-                    else RadioButton(selected = isSelected, onClick = { onSelect(millis) }, colors = RadioButtonDefaults.colors(selectedColor = EspaciosPalette.Navy))
-                }
-            }
-        }
+        Text(
+            "Puedes reservar desde hoy hasta ${ReservationValidator.MAX_DAYS_AHEAD} días adelante.",
+            modifier = Modifier.padding(horizontal = 22.dp, vertical = 10.dp),
+            color = EspaciosPalette.Slate,
+            fontSize = 12.sp
+        )
+        Spacer(Modifier.weight(1f))
         if (error != null) ErrorLine(error)
         Button(
             onClick = onNext,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp).height(48.dp),
             colors = ButtonDefaults.buttonColors(containerColor = EspaciosPalette.Navy)
         ) { Text("Siguiente  →") }
+    }
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { onSelect(localMidnightFromUtcDate(it)) }
+                        showDatePicker = false
+                    },
+                    enabled = datePickerState.selectedDateMillis != null
+                ) { Text("Aceptar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+            }
+        ) {
+            DatePicker(state = datePickerState, showModeToggle = false)
+        }
     }
 }
 
@@ -247,15 +233,17 @@ private fun DetailsStep(
         }
         state.slotsError?.let { ErrorLine(it) }
         Spacer(Modifier.height(10.dp))
-        ReservationValidator.SLOTS.chunked(2).forEach { rowSlots ->
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+        Text("Los horarios en gris ya están ocupados.", color = EspaciosPalette.Slate, fontSize = 11.sp)
+        Spacer(Modifier.height(8.dp))
+        ReservationValidator.SLOTS.chunked(3).forEach { rowSlots ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
                 rowSlots.forEach { slot ->
                     val selected = state.selectedSlot == slot
                     val unavailable = slot in state.unavailableSlots
                     OutlinedButton(
                         onClick = { onSlot(slot) },
                         enabled = !unavailable && !state.isLoadingSlots && state.slotsError == null,
-                        modifier = Modifier.weight(1f).height(52.dp),
+                        modifier = Modifier.weight(1f).height(48.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
                             containerColor = if (selected) EspaciosPalette.Navy else EspaciosPalette.White,
                             contentColor = if (selected) EspaciosPalette.White else EspaciosPalette.Navy,
@@ -263,10 +251,7 @@ private fun DetailsStep(
                             disabledContentColor = EspaciosPalette.Slate
                         )
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(slot, fontSize = 12.sp)
-                            if (unavailable) Text("Ocupado", fontSize = 9.sp)
-                        }
+                        Text(slot, fontSize = 10.sp, maxLines = 1)
                     }
                 }
             }

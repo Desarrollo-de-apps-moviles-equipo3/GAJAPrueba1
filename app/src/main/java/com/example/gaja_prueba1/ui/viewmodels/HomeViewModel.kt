@@ -3,7 +3,10 @@ package com.example.gaja_prueba1.ui.viewmodels
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.gaja_prueba1.data.AppDatabase
+import com.example.gaja_prueba1.data.remote.AlertResponse
+import com.example.gaja_prueba1.data.remote.ReservationResponse
+import com.example.gaja_prueba1.model.RemoteAlertasRepository
+import com.example.gaja_prueba1.model.RemoteReservationsRepository
 import com.example.gaja_prueba1.model.RemoteSpacesRepository
 import com.example.gaja_prueba1.model.RemoteWeatherRepository
 import com.example.gaja_prueba1.model.Space
@@ -15,14 +18,15 @@ import com.example.gaja_prueba1.model.filterSpaces
 import com.example.gaja_prueba1.model.sortByDistance
 import com.example.gaja_prueba1.util.LocationResult
 import com.example.gaja_prueba1.util.NearbyLocationProvider
-import com.example.gaja_prueba1.validation.ReservationValidator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 data class UserLocation(val latitude: Double, val longitude: Double)
 
@@ -45,6 +49,8 @@ data class HomeUiState(
     val query: String = "",
     val upcomingReservations: Int = 0,
     val pastReservations: Int = 0,
+    val reservations: List<ReservationResponse> = emptyList(),
+    val alerts: List<AlertResponse> = emptyList(),
     val userLocation: UserLocation? = null,
     val nearby: NearbyState = NearbyState.Idle,
     val weather: Map<String, SpaceWeather> = emptyMap(),
@@ -66,56 +72,91 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     // N3: los espacios vienen del microservicio. N2: el clima, de la API externa Open-Meteo.
     private val repository: SpacesRepository = RemoteSpacesRepository()
     private val weatherRepository: WeatherRepository = RemoteWeatherRepository()
-    private val reservationDao = AppDatabase.get(application).reservationDao()
+    private val reservationsRepository = RemoteReservationsRepository()
+    private val alertsRepository = RemoteAlertasRepository()
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
         loadSpaces()
-        observeReservationCounters()
     }
 
-    private fun observeReservationCounters() {
-        val today = ReservationValidator.toIsoDate(System.currentTimeMillis())
+    fun loadPersonalData(email: String) {
+        if (email.isBlank()) return
+
         viewModelScope.launch {
-            combine(
-                reservationDao.observeUpcomingCount(today),
-                reservationDao.observePastCount(today)
-            ) { upcoming, past -> upcoming to past }
-                .collect { (upcoming, past) ->
-                    _uiState.update {
-                        it.copy(upcomingReservations = upcoming, pastReservations = past)
-                    }
+            try {
+                val reservations = reservationsRepository.listarPorUsuario(email.trim())
+                val today = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(Date())
+                val activeStatuses = setOf("PENDIENTE", "APROBADA")
+                _uiState.update {
+                    it.copy(
+                        reservations = reservations,
+                        upcomingReservations = reservations.count { reservation ->
+                            reservation.fecha >= today && reservation.estado.uppercase() in activeStatuses
+                        },
+                        pastReservations = reservations.count { reservation ->
+                            reservation.fecha < today
+                        }
+                    )
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.e("HOME_RESERVATIONS", "No se pudieron cargar las reservas", e)
+            }
+        }
+
+        viewModelScope.launch {
+            try {
+                val alerts = alertsRepository.listarPorUsuario(email.trim())
+                _uiState.update { it.copy(alerts = alerts) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.e("HOME_ALERTS", "No se pudieron cargar las alertas", e)
+            }
         }
     }
 
     fun loadSpaces() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            try {
-                val spaces = repository.getSpaces()
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        allSpaces = spaces
-                    )
-                }
-                loadWeather(spaces)
+            _uiState.update {
+                it.copy(isLoading = true, errorMessage = null)
+            }
+
+            val spaces = try {
+                repository.getSpaces()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                android.util.Log.e(
+                    "HOME_SPACES",
+                    "Error al cargar los espacios",
+                    e
+                )
+
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "No pudimos cargar los espacios. Revisa tu conexión e inténtalo de nuevo."
+                        errorMessage = "No pudimos cargar los espacios. Inténtalo de nuevo."
                     )
                 }
+                return@launch
             }
+
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    allSpaces = spaces
+                )
+            }
+
+            // El clima se carga aparte. Si falla, no oculta las canchas.
+            loadWeather(spaces)
         }
     }
-
     fun refreshSpaces() {
         if (!_uiState.value.isLoading) loadSpaces()
     }

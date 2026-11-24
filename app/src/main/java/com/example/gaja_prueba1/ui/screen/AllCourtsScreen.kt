@@ -25,6 +25,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
@@ -49,6 +50,9 @@ import com.example.gaja_prueba1.ui.theme.EspaciosPalette
 @Composable
 fun AllCourtsScreen(
     spaces: List<Space>,
+    isLoading: Boolean = false,
+    errorMessage: String? = null,
+    onRetry: () -> Unit = {},
     onBack: () -> Unit,
     onReserveClick: (Space) -> Unit
 ) {
@@ -89,13 +93,27 @@ fun AllCourtsScreen(
             fontSize = 14.sp
         )
 
-        if (spaces.isEmpty()) {
-            Text(
-                text = "No hay canchas registradas todavía.",
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-                color = EspaciosPalette.Slate,
-                fontSize = 13.sp
-            )
+        if (isLoading || errorMessage != null || spaces.isEmpty()) {
+            Column(
+                modifier = Modifier.fillMaxWidth().weight(1f).padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+            ) {
+                when {
+                    isLoading -> CircularProgressIndicator(color = EspaciosPalette.Navy)
+                    errorMessage != null -> {
+                        Text(errorMessage, color = EspaciosPalette.Slate, fontSize = 13.sp)
+                        Button(onClick = onRetry, modifier = Modifier.padding(top = 12.dp)) {
+                            Text("Reintentar")
+                        }
+                    }
+                    else -> Text(
+                        text = "No hay canchas registradas todavía.",
+                        color = EspaciosPalette.Slate,
+                        fontSize = 13.sp
+                    )
+                }
+            }
         } else {
             LazyColumn(
                 modifier = Modifier.weight(1f),

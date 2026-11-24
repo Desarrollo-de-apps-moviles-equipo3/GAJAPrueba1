@@ -168,10 +168,12 @@ class MainActivity : ComponentActivity() {
 
                                 MainShellScreen(
                                     userName = userName,
-                                    otherTabs = { tab, onOpenReservations, onBackHome, onReserveClick ->
+                                    userEmail = session.email,
+                                    otherTabs = { tab, onOpenReservations, onBackHome, _ ->
                                         when (tab) {
                                             BottomTab.Reservas -> {
                                                 MyReservationsScreen(
+                                                    email = session.email,
                                                     onBack = onBackHome
                                                 )
                                             }
@@ -188,9 +190,7 @@ class MainActivity : ComponentActivity() {
                                             }
 
                                             else -> {
-                                                ComingSoonScreen(
-                                                    sectionName = tab.label
-                                                )
+                                                ComingSoonScreen(sectionName = tab.label)
                                             }
                                         }
                                     }

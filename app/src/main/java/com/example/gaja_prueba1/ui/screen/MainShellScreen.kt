@@ -25,6 +25,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +41,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gaja_prueba1.model.Space
 import com.example.gaja_prueba1.ui.theme.EspaciosPalette
 import com.example.gaja_prueba1.ui.viewmodels.ReservationViewModel
+import com.example.gaja_prueba1.ui.viewmodels.HomeViewModel
 
 enum class BottomTab(val label: String, val icon: ImageVector) {
     Inicio("Inicio", Icons.Filled.Home),
@@ -52,6 +54,7 @@ enum class BottomTab(val label: String, val icon: ImageVector) {
 @Composable
 fun MainShellScreen(
     userName: String,
+    userEmail: String,
     onReserveClick: (Space) -> Unit = {},
     otherTabs: @Composable (
         BottomTab,
@@ -67,14 +70,17 @@ fun MainShellScreen(
     val selected = tabs[selectedIndex]
 
     var reservationSpace by remember { mutableStateOf<Space?>(null) }
+    var showAllCourts by rememberSaveable { mutableStateOf(false) }
     val reservationViewModel: ReservationViewModel = viewModel()
+    val homeViewModel: HomeViewModel = viewModel()
+    val homeState by homeViewModel.uiState.collectAsState()
 
-    StatusBarIcons(lightIcons = selected == BottomTab.Inicio && reservationSpace == null)
+    StatusBarIcons(lightIcons = selected == BottomTab.Inicio && reservationSpace == null && !showAllCourts)
 
     Scaffold(
         containerColor = EspaciosPalette.Cream,
         bottomBar = {
-            if (reservationSpace == null) {
+            if (reservationSpace == null && !showAllCourts) {
                 AppBottomBar(
                     tabs = tabs,
                     selectedIndex = selectedIndex,
@@ -91,6 +97,7 @@ fun MainShellScreen(
             if (reservationSpace != null) {
                 ReservationFormScreen(
                     space = reservationSpace!!,
+                    userEmail = userEmail,
                     onBack = { reservationSpace = null },
                     onDone = {
                         reservationSpace = null
@@ -101,6 +108,19 @@ fun MainShellScreen(
                         selectedIndex = tabs.indexOf(BottomTab.Reservas)
                     },
                     viewModel = reservationViewModel
+                )
+            } else if (showAllCourts) {
+                AllCourtsScreen(
+                    spaces = homeState.allSpaces,
+                    isLoading = homeState.isLoading,
+                    errorMessage = homeState.errorMessage,
+                    onRetry = homeViewModel::loadSpaces,
+                    onBack = { showAllCourts = false },
+                    onReserveClick = { space ->
+                        showAllCourts = false
+                        reservationSpace = space
+                        onReserveClick(space)
+                    }
                 )
             } else {
                 AnimatedContent(
@@ -113,6 +133,11 @@ fun MainShellScreen(
                     if (tab == BottomTab.Inicio) {
                         HomeScreen(
                             userName = userName,
+                            userEmail = userEmail,
+                            onViewReservations = {
+                                selectedIndex = tabs.indexOf(BottomTab.Calendario)
+                            },
+                            onBrowseCourts = { showAllCourts = true },
                             onReserveClick = { space ->
                                 reservationSpace = space
                                 onReserveClick(space)
@@ -189,6 +214,9 @@ private fun StatusBarIcons(lightIcons: Boolean) {
         }
     }
 }
+
+
+
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this

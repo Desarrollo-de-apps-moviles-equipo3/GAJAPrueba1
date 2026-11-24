@@ -19,6 +19,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,6 +38,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -43,6 +46,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -56,7 +60,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -71,6 +80,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gaja_prueba1.model.Space
+import com.example.gaja_prueba1.data.remote.AlertResponse
+import com.example.gaja_prueba1.data.remote.ReservationResponse
 import com.example.gaja_prueba1.model.formatDistance
 import com.example.gaja_prueba1.ui.viewmodels.HomeUiState
 import com.example.gaja_prueba1.ui.viewmodels.HomeViewModel
@@ -79,16 +90,26 @@ import com.example.gaja_prueba1.ui.viewmodels.WeatherStatus
 import com.example.gaja_prueba1.util.NearbyLocationProvider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import com.example.gaja_prueba1.R
 import com.example.gaja_prueba1.ui.components.GajaCard
 import com.example.gaja_prueba1.ui.components.GajaChipTone
 import com.example.gaja_prueba1.ui.components.GajaStatCard
 import com.example.gaja_prueba1.ui.components.GajaStatusChip
 import com.example.gaja_prueba1.ui.theme.GAJAPrueba1Theme
 import androidx.compose.material3.LocalContentColor
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun HomeScreen(
     userName: String,
+    userEmail: String,
+    onViewReservations: () -> Unit = {},
+    onBrowseCourts: () -> Unit = {},
     onReserveClick: (Space) -> Unit = {},
     viewModel: HomeViewModel = viewModel()
 ) {
@@ -100,6 +121,7 @@ fun HomeScreen(
     )
 
     LaunchedEffect(Unit) { viewModel.refreshSpaces() }
+    LaunchedEffect(userEmail) { viewModel.loadPersonalData(userEmail) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -117,6 +139,10 @@ fun HomeScreen(
     HomeContent(
         state = state,
         userName = userName,
+        reservations = state.reservations,
+        alerts = state.alerts,
+        onViewReservations = onViewReservations,
+        onBrowseCourts = onBrowseCourts,
         onQueryChange = viewModel::onQueryChange,
         onRetry = viewModel::loadSpaces,
         onReserveClick = onReserveClick,
@@ -151,7 +177,11 @@ fun HomeContent(
     onNearbyClick: () -> Unit = {},
     onNearbyClear: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
-    onWeatherRetry: () -> Unit = {}
+    onWeatherRetry: () -> Unit = {},
+    reservations: List<ReservationResponse> = emptyList(),
+    alerts: List<AlertResponse> = emptyList(),
+    onViewReservations: () -> Unit = {},
+    onBrowseCourts: () -> Unit = {}
 ) {
     val scheme = MaterialTheme.colorScheme
     val gradientTop = lerp(scheme.primary, scheme.secondary, 0.2f)
@@ -163,22 +193,54 @@ fun HomeContent(
             .statusBarsPadding()
             .verticalScroll(rememberScrollState())
     ) {
-        HomeHeader()
-
-        Text(
-            text = "Hola, $userName",
-            color = scheme.onPrimary,
-            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold),
-            modifier = Modifier.padding(horizontal = 24.dp)
-        )
-        Text(
-            text = "Agenda tu cancha",
-            color = scheme.onPrimary.copy(alpha = 0.7f),
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 6.dp)
-        )
-
-        Spacer(Modifier.height(20.dp))
+        Box(
+            modifier = Modifier.fillMaxWidth().height(245.dp)
+        ) {
+            Image(
+                painter = painterResource(R.drawable.escuela_militar_hero),
+                contentDescription = "Recintos deportivos de la Escuela Militar",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            Box(
+                modifier = Modifier.fillMaxSize().background(
+                    Brush.verticalGradient(
+                        0f to Color(0xCC0E2638),
+                        0.42f to Color(0x44102536),
+                        1f to Color(0xF20E2638)
+                    )
+                )
+            )
+            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+                HomeHeader(unreadAlertCount = alerts.count { !it.leida })
+                Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)) {
+                    Text(
+                        text = "Hola, $userName",
+                        color = Color.White,
+                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                    Text(
+                        text = "Agenda tu cancha y disfruta tu deporte favorito.",
+                        color = Color.White.copy(alpha = 0.84f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 5.dp)
+                    )
+                    Button(
+                        onClick = onBrowseCourts,
+                        modifier = Modifier.padding(top = 14.dp).height(44.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = scheme.tertiary,
+                            contentColor = scheme.onTertiary
+                        )
+                    ) {
+                        Text("Reservar", fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.width(8.dp))
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
+                    }
+                }
+            }
+        }
 
         Row(
             modifier = Modifier
@@ -236,7 +298,7 @@ fun HomeContent(
         Spacer(Modifier.height(20.dp))
 
         Text(
-            text = "Espacios",
+            text = "Canchas destacadas",
             color = scheme.onPrimary,
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
             modifier = Modifier.padding(horizontal = 24.dp)
@@ -294,7 +356,7 @@ fun HomeContent(
                     contentPadding = PaddingValues(horizontal = 24.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(state.visibleSpaces, key = { it.id }) { space ->
+                    items(state.visibleSpaces.take(3), key = { it.id }) { space ->
                         SpaceCard(
                             space = space,
                             distanceText = state.distanceTo(space)?.let(::formatDistance),
@@ -307,12 +369,212 @@ fun HomeContent(
             }
         }
 
+        Spacer(Modifier.height(24.dp))
+
+        WeekReservationsSection(
+            reservations = reservations,
+            onViewReservations = onViewReservations
+        )
+
+        Spacer(Modifier.height(22.dp))
+
+        HomeAlertsSection(alerts = alerts)
+
         Spacer(Modifier.height(28.dp))
     }
 }
 
 @Composable
-private fun HomeHeader() {
+private fun WeekReservationsSection(
+    reservations: List<ReservationResponse>,
+    onViewReservations: () -> Unit
+) {
+    val weekDays = remember { homeWeekDays() }
+    var selectedDate by rememberSaveable {
+        mutableStateOf(homeIsoDate(System.currentTimeMillis()))
+    }
+    val selectedReservations = reservations
+        .filter {
+            it.fecha == selectedDate &&
+                (it.estado.equals("PENDIENTE", true) || it.estado.equals("APROBADA", true))
+        }
+        .sortedBy { it.horario }
+
+    Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Mi semana",
+                color = MaterialTheme.colorScheme.onPrimary,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+            )
+            TextButton(onClick = onViewReservations) {
+                Text("Calendario  ›", color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f), fontSize = 11.sp)
+            }
+        }
+
+        GajaCard(
+            modifier = Modifier.fillMaxWidth(),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                weekDays.forEach { day ->
+                    val iso = homeIsoDate(day)
+                    val selected = iso == selectedDate
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                            .clickable { selectedDate = iso }
+                            .padding(vertical = 7.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = SimpleDateFormat("EEEEE", Locale("es", "CL")).format(Date(day)).uppercase(),
+                            color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 9.sp
+                        )
+                        Spacer(Modifier.height(5.dp))
+                        Text(
+                            text = SimpleDateFormat("d", Locale.ROOT).format(Date(day)),
+                            color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+
+            if (selectedReservations.isEmpty()) {
+                Text(
+                    text = "No tienes reservas para este día.",
+                    modifier = Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            } else {
+                Column(
+                    modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    selectedReservations.take(3).forEach { reservation ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f), RoundedCornerShape(9.dp))
+                                .padding(horizontal = 10.dp, vertical = 9.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier.size(width = 3.dp, height = 32.dp)
+                                    .background(MaterialTheme.colorScheme.tertiary, RoundedCornerShape(3.dp))
+                            )
+                            Column(modifier = Modifier.weight(1f).padding(start = 9.dp)) {
+                                Text(reservation.espacio, color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                Text(reservation.horario, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                            }
+                            Text(
+                                reservation.estado.lowercase().replaceFirstChar { it.titlecase(Locale("es", "CL")) },
+                                color = MaterialTheme.colorScheme.tertiary,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeAlertsSection(alerts: List<AlertResponse>) {
+    var showAll by remember { mutableStateOf(false) }
+    val visibleAlerts = if (showAll) alerts else alerts.take(2)
+    Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Alertas",
+                color = MaterialTheme.colorScheme.onPrimary,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+            )
+            if (alerts.size > 2) {
+                TextButton(onClick = { showAll = !showAll }) {
+                    Text(if (showAll) "Ver menos" else "Ver todas", color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f), fontSize = 11.sp)
+                }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+
+        if (alerts.isEmpty()) {
+            GajaCard(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "No tienes alertas nuevas.",
+                    modifier = Modifier.padding(14.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                visibleAlerts.forEach { alert ->
+                    GajaCard(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier.size(34.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Filled.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(17.dp))
+                            }
+                            Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
+                                Text(alert.mensaje, color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                Text(homeAlertTime(alert.creadaEn), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                            }
+                            if (!alert.leida) {
+                                Box(Modifier.size(7.dp).background(MaterialTheme.colorScheme.tertiary, CircleShape))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun homeWeekDays(): List<Long> {
+    val today = Calendar.getInstance().apply {
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }
+    return (0..6).map { offset ->
+        (today.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, offset) }.timeInMillis
+    }
+}
+
+private fun homeIsoDate(millis: Long): String =
+    SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(Date(millis))
+
+private fun homeAlertTime(value: String): String =
+    value.substringAfter('T', value).take(5).let { if (it.isBlank()) "Reciente" else it }
+
+@Composable
+private fun HomeHeader(unreadAlertCount: Int) {
     val onPrimary = MaterialTheme.colorScheme.onPrimary
     Row(
         modifier = Modifier
@@ -323,16 +585,14 @@ private fun HomeHeader() {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .border(1.dp, onPrimary.copy(alpha = 0.5f), CircleShape),
+                modifier = Modifier.size(38.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Filled.Star,
                     contentDescription = null,
                     tint = Color(0xFFE0B13C),
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(30.dp)
                 )
             }
             Spacer(Modifier.width(16.dp))
@@ -345,12 +605,32 @@ private fun HomeHeader() {
                 )
             )
         }
-        Icon(
-            imageVector = Icons.Filled.Notifications,
-            contentDescription = "Notificaciones",
-            tint = onPrimary,
-            modifier = Modifier.size(24.dp)
-        )
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(26.dp)
+                    .border(1.dp, onPrimary.copy(alpha = 0.6f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("?", color = onPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            }
+            Box(modifier = Modifier.size(28.dp), contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Filled.Notifications,
+                    contentDescription = "Notificaciones",
+                    tint = onPrimary,
+                    modifier = Modifier.size(22.dp)
+                )
+                if (unreadAlertCount > 0) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .size(7.dp)
+                            .background(MaterialTheme.colorScheme.tertiary, CircleShape)
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -471,13 +751,13 @@ private fun SpaceCard(
 
     GajaCard(
         modifier = modifier
-            .width(260.dp)
+            .width(200.dp)
             .animateContentSize()
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(120.dp)
+                .height(106.dp)
                 .background(Brush.verticalGradient(listOf(baseColor, baseColor.copy(alpha = 0.65f))))
         ) {
             GajaStatusChip(

@@ -1,7 +1,5 @@
-
 package com.example.gaja_prueba1.ui.screen
 
-import androidx.compose.material3.IconButton
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -12,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -24,14 +21,20 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,10 +44,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.gaja_prueba1.data.ReservationEntity
+import com.example.gaja_prueba1.data.remote.ReservationResponse
 import com.example.gaja_prueba1.ui.theme.EspaciosPalette
 import com.example.gaja_prueba1.ui.viewmodels.MyReservationsViewModel
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 private enum class ReservationTab(val label: String) {
@@ -56,44 +60,51 @@ private enum class ReservationTab(val label: String) {
 
 @Composable
 fun MyReservationsScreen(
+    email: String,
     onBack: () -> Unit,
     viewModel: MyReservationsViewModel = viewModel()
 ) {
     val reservations by viewModel.reservations.collectAsState()
+    val state by viewModel.uiState.collectAsState()
+    var reservationToCancel by remember {
+        mutableStateOf<ReservationResponse?>(null)
+    }
+
+    LaunchedEffect(email) {
+        viewModel.loadReservations(email)
+    }
 
     var selectedTabName by rememberSaveable {
         mutableStateOf(ReservationTab.PENDIENTES.name)
     }
-
     val selectedTab = ReservationTab.valueOf(selectedTabName)
 
+    val today = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(Date())
 
-// Obtener la fecha actual
-    val today = SimpleDateFormat(
-        "yyyy-MM-dd",
-        Locale.ROOT
-    ).format(java.util.Date())
-
-// Separar reservas según su fecha
-    val pendingReservations = reservations.filter {
-        it.date >= today
+    val pendientes = reservations.filter {
+        it.fecha >= today && it.estado.equals("PENDIENTE", ignoreCase = true)
     }
 
-    val pastReservations = reservations.filter {
-        it.date < today
+    val proximas = reservations.filter {
+        it.fecha >= today && it.estado.equals("APROBADA", ignoreCase = true)
     }
 
-// Determinar qué reservas mostrar
+    val pasadas = reservations.filter {
+        it.fecha < today &&
+                !it.estado.equals("CANCELADA", ignoreCase = true) &&
+                !it.estado.equals("RECHAZADA", ignoreCase = true)
+    }
+
+    val canceladas = reservations.filter {
+        it.estado.equals("CANCELADA", ignoreCase = true) ||
+                it.estado.equals("RECHAZADA", ignoreCase = true)
+    }
+
     val visibleReservations = when (selectedTab) {
-        ReservationTab.PENDIENTES -> pendingReservations
-        ReservationTab.PROXIMAS -> emptyList()
-        ReservationTab.PASADAS -> pastReservations
-        ReservationTab.CANCELADAS -> emptyList()
-    }
-
-    val count = when (selectedTab) {
-        ReservationTab.PENDIENTES -> pendingReservations.size
-        else -> 0
+        ReservationTab.PENDIENTES -> pendientes
+        ReservationTab.PROXIMAS -> proximas
+        ReservationTab.PASADAS -> pasadas
+        ReservationTab.CANCELADAS -> canceladas
     }
 
     Column(
@@ -102,7 +113,6 @@ fun MyReservationsScreen(
             .background(EspaciosPalette.Cream)
             .padding(horizontal = 16.dp)
     ) {
-        // Encabezado
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -129,7 +139,6 @@ fun MyReservationsScreen(
             )
         }
 
-        // Selector de las cuatro categorías
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -141,21 +150,15 @@ fun MyReservationsScreen(
         ) {
             ReservationTab.entries.forEach { tab ->
                 val selected = selectedTab == tab
-
-                val tabCount = when (tab) {
-                    ReservationTab.PENDIENTES ->
-                        pendingReservations.size
-
-                    ReservationTab.PASADAS ->
-                        pastReservations.size
-
-                    else -> 0
+                val count = when (tab) {
+                    ReservationTab.PENDIENTES -> pendientes.size
+                    ReservationTab.PROXIMAS -> proximas.size
+                    ReservationTab.PASADAS -> pasadas.size
+                    ReservationTab.CANCELADAS -> canceladas.size
                 }
 
                 Surface(
-                    onClick = {
-                        selectedTabName = tab.name
-                    },
+                    onClick = { selectedTabName = tab.name },
                     shape = RoundedCornerShape(8.dp),
                     color = if (selected) {
                         EspaciosPalette.Navy
@@ -184,9 +187,8 @@ fun MyReservationsScreen(
                                 FontWeight.Normal
                             }
                         )
-
                         Text(
-                            text = " $tabCount",
+                            text = " $count",
                             fontSize = 10.sp,
                             color = if (selected) {
                                 EspaciosPalette.White
@@ -199,77 +201,124 @@ fun MyReservationsScreen(
             }
         }
 
+
+
+
+
         Spacer(modifier = Modifier.size(16.dp))
 
-        if (visibleReservations.isEmpty()) {
-            // Estado vacío
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = 24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.CalendarMonth,
-                    contentDescription = null,
-                    tint = EspaciosPalette.Slate,
-                    modifier = Modifier.size(44.dp)
-                )
+        when {
+            state.isLoading -> {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator()
+                    Text(
+                        text = "Cargando tus reservas…",
+                        modifier = Modifier.padding(top = 12.dp),
+                        color = EspaciosPalette.Slate
+                    )
+                }
+            }
 
+            state.error != null -> {
                 Text(
-                    text = if (
-                        selectedTab == ReservationTab.PENDIENTES
-                    ) {
-                        "No tienes solicitudes pendientes"
-                    } else {
-                        when (selectedTab) {
-                            ReservationTab.PROXIMAS ->
-                                "No tienes reservas próximas"
-
-                            ReservationTab.PASADAS ->
-                                "No tienes reservas pasadas"
-
-                            ReservationTab.CANCELADAS ->
-                                "No tienes reservas canceladas"
-
-                            else -> "No hay reservas"
-                        }
-                    },
-                    modifier = Modifier.padding(top = 12.dp),
-                    color = EspaciosPalette.Navy,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Text(
-                    text = "Tus solicitudes aparecerán aquí.",
-                    modifier = Modifier.padding(top = 6.dp),
-                    color = EspaciosPalette.Slate,
-                    fontSize = 12.sp
+                    text = state.error.orEmpty(),
+                    modifier = Modifier.padding(16.dp),
+                    color = MaterialTheme.colorScheme.error
                 )
             }
-        } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(
-                    items = visibleReservations,
-                    key = { reservation -> reservation.id }
-                ) { reservation ->
-                    PendingReservationCard(
-                        reservation = reservation,
-                        isPast = selectedTab == ReservationTab.PASADAS
+
+            visibleReservations.isEmpty() -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = 24.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.CalendarMonth,
+                        contentDescription = null,
+                        tint = EspaciosPalette.Slate,
+                        modifier = Modifier.size(44.dp)
                     )
+                    Text(
+                        text = when (selectedTab) {
+                            ReservationTab.PENDIENTES ->
+                                "No tienes solicitudes pendientes"
+                            ReservationTab.PROXIMAS ->
+                                "No tienes reservas próximas"
+                            ReservationTab.PASADAS ->
+                                "No tienes reservas pasadas"
+                            ReservationTab.CANCELADAS ->
+                                "No tienes reservas canceladas"
+                        },
+                        modifier = Modifier.padding(top = 12.dp),
+                        color = EspaciosPalette.Navy,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "Tus reservas aparecerán aquí.",
+                        modifier = Modifier.padding(top = 6.dp),
+                        color = EspaciosPalette.Slate,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+
+            else -> {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(
+                        items = visibleReservations,
+                        key = { reservation -> reservation.id }
+                    ) { reservation ->
+                        ReservationCard(
+                            reservation = reservation,
+                            isPast = selectedTab == ReservationTab.PASADAS,
+                            onCancelClick = { reservationToCancel = reservation }
+                        )
+                    }
                 }
             }
         }
     }
+
+    reservationToCancel?.let { reservation ->
+        AlertDialog(
+            onDismissRequest = { reservationToCancel = null },
+            title = { Text("Cancelar reserva") },
+            text = {
+                Text("¿Quieres cancelar la reserva de ${reservation.espacio}?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.cancelReservation(reservation.id, email)
+                        reservationToCancel = null
+                    }
+                ) {
+                    Text("Sí, cancelar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { reservationToCancel = null }) {
+                    Text("Volver")
+                }
+            }
+        )
+    }
 }
 
 @Composable
-private fun PendingReservationCard(
-    reservation: ReservationEntity,
-    isPast: Boolean = false
+private fun ReservationCard(
+    reservation: ReservationResponse,
+    isPast: Boolean,
+    onCancelClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -277,18 +326,10 @@ private fun PendingReservationCard(
         colors = CardDefaults.cardColors(
             containerColor = EspaciosPalette.White
         ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 1.dp
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(11.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Icono ilustrativo del espacio deportivo.
-                // No requiere imágenes ni datos adicionales.
+        Column(modifier = Modifier.padding(11.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(
                     modifier = Modifier.size(42.dp),
                     shape = RoundedCornerShape(8.dp),
@@ -308,26 +349,26 @@ private fun PendingReservationCard(
                         .padding(start = 10.dp)
                 ) {
                     Text(
-                        text = reservation.space,
+                        text = reservation.espacio,
                         color = EspaciosPalette.Navy,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold
                     )
-
                     Text(
-                        text = "${formatDate(reservation.date)} · ${reservation.timeSlot}",
+                        text = "${formatDate(reservation.fecha)} · ${reservation.horario}",
                         modifier = Modifier.padding(top = 4.dp),
                         color = EspaciosPalette.Slate,
                         fontSize = 10.sp
                     )
-
                     Surface(
                         modifier = Modifier.padding(top = 6.dp),
                         shape = RoundedCornerShape(20.dp),
                         color = EspaciosPalette.Beige
                     ) {
                         Text(
-                            text = if (isPast) "Fecha finalizada" else "Pendiente",
+                            text = reservation.estado.replaceFirstChar {
+                                it.titlecase(Locale("es", "CL"))
+                            },
                             modifier = Modifier.padding(
                                 horizontal = 9.dp,
                                 vertical = 4.dp
@@ -349,15 +390,26 @@ private fun PendingReservationCard(
                 text = if (isPast) {
                     "Reserva #${reservation.id} · Fecha finalizada"
                 } else {
-                    "Solicitud #${reservation.id} · En revisión"
+                    "Reserva #${reservation.id}"
                 },
-                modifier = Modifier.padding(
-                    start = 52.dp,
-                    top = 8.dp
-                ),
+                modifier = Modifier.padding(start = 52.dp, top = 8.dp),
                 color = EspaciosPalette.Slate,
                 fontSize = 9.sp
             )
+
+            val canCancel = !isPast && (
+                reservation.estado.equals("PENDIENTE", ignoreCase = true) ||
+                    reservation.estado.equals("APROBADA", ignoreCase = true)
+            )
+
+            if (canCancel) {
+                TextButton(
+                    onClick = onCancelClick,
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text("Cancelar", color = EspaciosPalette.Orange)
+                }
+            }
         }
     }
 }
@@ -372,13 +424,8 @@ private fun formatDate(date: String): String {
         SimpleDateFormat(
             "EEE · dd MMM yyyy",
             Locale("es", "CL")
-        ).format(parsed).replaceFirstChar {
-            it.uppercase()
-        }
+        ).format(parsed).replaceFirstChar { it.titlecase(Locale("es", "CL")) }
     } catch (_: Exception) {
         date
     }
 }
-
-
-

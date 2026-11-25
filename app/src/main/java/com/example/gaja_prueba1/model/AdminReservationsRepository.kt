@@ -74,3 +74,10 @@ object RejectionValidator {
         }
     }
 }
+
+/** Otra solicitud pendiente que pide la misma cancha, fecha y horario. */
+fun AdminReservation.conflictWith(others: List<AdminReservation>): AdminReservation? =
+    others.firstOrNull {
+        it.id != id && it.status == EstadoReserva.PENDIENTE &&
+                it.space == space && it.date == date && it.slot == slot
+    }

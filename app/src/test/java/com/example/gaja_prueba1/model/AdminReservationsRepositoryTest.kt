@@ -2,7 +2,7 @@ package com.example.gaja_prueba1.model
 
 import com.example.gaja_prueba1.data.remote.ActualizarEstadoDto
 import com.example.gaja_prueba1.data.remote.ReservaDto
-import com.example.gaja_prueba1.data.remote.ReservasApi
+import com.example.gaja_prueba1.data.remote.AdminReservasApi
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -17,7 +17,7 @@ class AdminReservationsRepositoryTest {
     )
 
     /** API falsa: guarda lo que le piden, igual que lo haría el servicio. */
-    private class FakeReservasApi(val data: MutableList<ReservaDto>) : ReservasApi {
+    private class FakeAdminReservasApi(val data: MutableList<ReservaDto>) : AdminReservasApi {
         var lastFilter: String? = null
         var lastBody: ActualizarEstadoDto? = null
         var lastId: Long? = null
@@ -40,7 +40,7 @@ class AdminReservationsRepositoryTest {
 
     @Test
     fun `getByStatus pide al servicio solo el estado indicado`() = runBlocking {
-        val api = FakeReservasApi(mutableListOf(dto(1, "PENDIENTE"), dto(2, "APROBADA")))
+        val api = FakeAdminReservasApi(mutableListOf(dto(1, "PENDIENTE"), dto(2, "APROBADA")))
         val result = RemoteAdminReservationsRepository(api).getByStatus(EstadoReserva.PENDIENTE)
 
         assertEquals("PENDIENTE", api.lastFilter)
@@ -50,7 +50,7 @@ class AdminReservationsRepositoryTest {
 
     @Test
     fun `approve envia estado APROBADA sin motivo`() = runBlocking {
-        val api = FakeReservasApi(mutableListOf(dto(1, "PENDIENTE")))
+        val api = FakeAdminReservasApi(mutableListOf(dto(1, "PENDIENTE")))
         val result = RemoteAdminReservationsRepository(api).approve(1)
 
         assertEquals(1L, api.lastId)
@@ -61,7 +61,7 @@ class AdminReservationsRepositoryTest {
 
     @Test
     fun `reject envia estado RECHAZADA con el motivo recortado`() = runBlocking {
-        val api = FakeReservasApi(mutableListOf(dto(1, "PENDIENTE")))
+        val api = FakeAdminReservasApi(mutableListOf(dto(1, "PENDIENTE")))
         val result = RemoteAdminReservationsRepository(api).reject(1, "  Cancha en mantención  ")
 
         assertEquals("RECHAZADA", api.lastBody?.estado)

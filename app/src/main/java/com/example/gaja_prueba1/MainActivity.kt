@@ -161,6 +161,7 @@ class MainActivity : ComponentActivity() {
 
                                 AdminShell(
                                     userName = userName,
+                                    userEmail = session.email,
                                     onLogout = onLogout
                                 )
 

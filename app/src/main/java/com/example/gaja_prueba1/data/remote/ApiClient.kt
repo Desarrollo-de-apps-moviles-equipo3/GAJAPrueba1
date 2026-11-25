@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit
  * Puertos acordados: usuarios 8081, espacios 8082, reservas 8083.
  */
 object ApiConfig {
-    private const val HOST = "http://10.0.2.2"
+    private const val HOST = "http://192.168.1.22"
 
     const val USUARIOS_URL = "$HOST:8081/"
     const val ESPACIOS_URL = "$HOST:8082/"

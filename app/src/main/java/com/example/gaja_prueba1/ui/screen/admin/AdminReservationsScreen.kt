@@ -1,9 +1,13 @@
 package com.example.gaja_prueba1.ui.screen.admin
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,10 +15,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
@@ -25,7 +34,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -34,16 +46,18 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gaja_prueba1.model.AdminReservation
 import com.example.gaja_prueba1.model.EstadoReserva
+import com.example.gaja_prueba1.model.conflictWith
 import com.example.gaja_prueba1.ui.components.GajaButton
 import com.example.gaja_prueba1.ui.components.GajaCard
-import com.example.gaja_prueba1.ui.components.GajaTextField
+import com.example.gaja_prueba1.ui.components.GajaFilterChip
 import com.example.gaja_prueba1.ui.viewmodels.AdminReservationsViewModel
+import com.example.gaja_prueba1.ui.viewmodels.RejectFormState
 import com.example.gaja_prueba1.ui.viewmodels.ReservationsTab
 
 /**
- * Sección "Reservas" del administrador (tarea A4):
- * listas Pendientes / Aprobadas / Rechazadas, detalle de la solicitud,
- * rechazo con motivo y pantallas de resultado.
+ * Sección "Reservas" del administrador (tareas A4 y A5):
+ * listas Pendientes / Aprobadas / Rechazadas, detalle de la solicitud (con aviso de
+ * conflicto de horario), rechazo con motivo y pantallas de resultado.
  */
 @Composable
 fun AdminReservationsScreen(
@@ -75,6 +89,9 @@ fun AdminReservationsScreen(
 
             selected != null -> ReservationDetailView(
                 reservation = selected,
+                conflict = if (selected.status == EstadoReserva.PENDIENTE)
+                    selected.conflictWith(state.items[ReservationsTab.Pendientes].orEmpty())
+                else null,
                 isApproving = state.isApproving,
                 onBack = viewModel::onCloseDetail,
                 onApprove = viewModel::onApprove,
@@ -94,30 +111,12 @@ fun AdminReservationsScreen(
         }
 
         state.rejectForm?.let { form ->
-            AlertDialog(
-                onDismissRequest = { if (!form.isSaving) viewModel.onCancelReject() },
-                title = { Text("Rechazar solicitud") },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Cuéntale a la persona por qué no se aprueba su reserva.")
-                        GajaTextField(
-                            value = form.reason,
-                            onValueChange = viewModel::onReasonChange,
-                            label = "Motivo del rechazo",
-                            errorText = form.error
-                        )
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = viewModel::onConfirmReject, enabled = !form.isSaving) {
-                        Text(if (form.isSaving) "Enviando…" else "Rechazar")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = viewModel::onCancelReject, enabled = !form.isSaving) {
-                        Text("Cancelar")
-                    }
-                }
+            RejectSheet(
+                requester = state.selected?.userEmail ?: "el solicitante",
+                form = form,
+                onReasonChange = viewModel::onReasonChange,
+                onConfirm = viewModel::onConfirmReject,
+                onDismiss = viewModel::onCancelReject
             )
         }
 
@@ -191,6 +190,7 @@ private fun ReservationsListView(
 @Composable
 private fun ReservationDetailView(
     reservation: AdminReservation,
+    conflict: AdminReservation?,
     isApproving: Boolean,
     onBack: () -> Unit,
     onApprove: () -> Unit,
@@ -202,6 +202,34 @@ private fun ReservationDetailView(
     ) {
         TextButton(onClick = onBack) { Text("← Volver") }
         Text("Detalle de la solicitud", style = MaterialTheme.typography.titleLarge)
+
+        if (conflict != null) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.shapes.medium)
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Icon(
+                    Icons.Filled.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.tertiary
+                )
+                Column {
+                    Text(
+                        "Conflicto de horario",
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                    Text(
+                        "RSV-${conflict.id} (${conflict.userEmail}) pide la misma cancha y hora.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                }
+            }
+        }
 
         GajaCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -261,5 +289,83 @@ private fun DecisionResultView(reservation: AdminReservation, onClose: () -> Uni
         }
         Spacer(Modifier.height(24.dp))
         GajaButton(text = "Volver a solicitudes", onClick = onClose)
+    }
+}
+
+private val rejectReasons = listOf(
+    "Horario bloqueado",
+    "Espacio en mantención",
+    "Conflicto con otra solicitud",
+    "Fuera de las reglas",
+    "Otro"
+)
+
+/** Hoja inferior para rechazar una solicitud: motivos rápidos + detalle obligatorio. */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun RejectSheet(
+    requester: String,
+    form: RejectFormState,
+    onReasonChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    var chip by rememberSaveable { mutableStateOf<String?>(null) }
+    val missing = form.reason.isBlank()
+
+    ModalBottomSheet(onDismissRequest = { if (!form.isSaving) onDismiss() }) {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text("Rechazar solicitud", style = MaterialTheme.typography.titleLarge)
+            Text(
+                "El motivo se enviará a $requester.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text("Motivo (obligatorio)", style = MaterialTheme.typography.labelLarge)
+
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                rejectReasons.forEach { reason ->
+                    GajaFilterChip(
+                        text = reason,
+                        selected = chip == reason,
+                        onClick = {
+                            chip = reason
+                            onReasonChange(if (reason == "Otro") "" else reason)
+                        }
+                    )
+                }
+            }
+
+            OutlinedTextField(
+                value = form.reason,
+                onValueChange = onReasonChange,
+                label = { Text("Detalle del motivo") },
+                minLines = 3,
+                isError = form.error != null || missing,
+                supportingText = {
+                    val msg = form.error ?: if (missing) "Escribe un motivo para continuar" else null
+                    if (msg != null) Text(msg)
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            GajaButton(
+                text = "Confirmar rechazo",
+                onClick = onConfirm,
+                enabled = !missing,
+                loading = form.isSaving
+            )
+            OutlinedButton(
+                onClick = onDismiss,
+                enabled = !form.isSaving,
+                modifier = Modifier.fillMaxWidth().height(50.dp)
+            ) { Text("Cancelar") }
+        }
     }
 }

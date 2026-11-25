@@ -77,6 +77,10 @@ interface UsuariosApi {
         @Query("rol") rol: String? = null
     ): List<UsuarioDto>
 
+    /** Perfil de quien tiene ese correo: la app lo usa con el correo de la sesión. */
+    @GET("api/usuarios/por-correo")
+    suspend fun getPorCorreo(@Query("email") email: String): UsuarioDto
+
     @GET("api/usuarios/{id}")
     suspend fun getUsuario(@Path("id") id: Long): UsuarioDto
 

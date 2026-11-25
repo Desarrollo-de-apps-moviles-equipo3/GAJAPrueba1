@@ -28,6 +28,26 @@ class RemoteUsuariosRepositoryTest {
     }
 
     @Test
+    fun getByEmail_busca_con_el_correo_sin_espacios_y_devuelve_el_perfil() = runBlocking {
+        val api = InMemoryUsuariosApi()
+        val user = RemoteUsuariosRepository(api).getByEmail("  CADETE@gaja.cl ")
+
+        assertEquals("CADETE@gaja.cl", api.lastEmailQuery)
+        assertEquals(1L, user.id)
+        assertEquals("Cadete", user.rol)
+    }
+
+    @Test
+    fun getByEmail_de_una_cuenta_sin_perfil_falla_con_el_mensaje_del_servicio() = runBlocking {
+        try {
+            RemoteUsuariosRepository(InMemoryUsuariosApi()).getByEmail("profe_exe@duoc.cl")
+            fail("Debía lanzar UsuarioException")
+        } catch (e: UsuarioException) {
+            assertEquals("Usuario no encontrado", e.message)
+        }
+    }
+
+    @Test
     fun fechaAlta_muestra_solo_el_dia() = runBlocking {
         val user = RemoteUsuariosRepository(InMemoryUsuariosApi()).get(1)
         assertEquals("2026-11-24", user.fechaAlta)

@@ -16,8 +16,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -47,7 +49,9 @@ fun ProfileScreen(
     onMyReservations: () -> Unit,
     onPersonalData: () -> Unit,
     onChangePassword: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onNotifications: () -> Unit = {},
+    onHelp: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val preferences = remember {
@@ -126,6 +130,8 @@ fun ProfileScreen(
             ProfileOption("Mis reservas", Icons.Filled.CalendarMonth, onMyReservations)
             ProfileOption("Datos personales", Icons.Filled.Person, onPersonalData)
             ProfileOption("Cambiar contraseña", Icons.Filled.Lock, onChangePassword)
+            ProfileOption("Notificaciones", Icons.Filled.Notifications, onNotifications)
+            ProfileOption("Ayuda y soporte", Icons.Filled.Info, onHelp)
             ProfileOption("Cerrar sesión", Icons.Filled.Logout, onLogout)
         }
     }

@@ -42,6 +42,7 @@ class AuthRepositoryTest {
         override suspend fun registrar(body: RegistroRequestDto): UsuarioDto = TODO()
         override suspend fun crear(body: RegistroRequestDto): UsuarioDto = TODO()
         override suspend fun getUsuarios(estado: String?, rol: String?): List<UsuarioDto> = TODO()
+        override suspend fun getPorCorreo(email: String): UsuarioDto = TODO()
         override suspend fun getUsuario(id: Long): UsuarioDto = TODO()
         override suspend fun actualizar(id: Long, body: ActualizarRequestDto): UsuarioDto = TODO()
         override suspend fun cambiarPassword(id: Long, body: CambiarPasswordDto) = TODO()

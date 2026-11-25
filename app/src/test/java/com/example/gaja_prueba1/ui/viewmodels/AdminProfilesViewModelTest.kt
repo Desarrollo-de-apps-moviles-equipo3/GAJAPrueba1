@@ -36,6 +36,11 @@ class FakeUsuariosRepository(
 
     override suspend fun getAll(): List<Usuario> { check(); return users.toList() }
     override suspend fun get(id: Long): Usuario = users.first { it.id == id }
+    override suspend fun getByEmail(email: String): Usuario {
+        check()
+        return users.firstOrNull { it.email.equals(email, ignoreCase = true) }
+            ?: throw UsuarioException("Usuario no encontrado")
+    }
 
     override suspend fun create(
         nombre: String, email: String, password: String, rol: String, telefono: String, institucion: String
@@ -49,9 +54,22 @@ class FakeUsuariosRepository(
     override suspend fun update(
         id: Long, nombre: String, telefono: String, institucion: String,
         notifReservas: Boolean?, notifAlertas: Boolean?
-    ): Usuario = action(id) { it.copy(nombre = nombre, telefono = telefono, institucion = institucion) }
+    ): Usuario = action(id) {
+        it.copy(
+            nombre = nombre,
+            telefono = telefono,
+            institucion = institucion,
+            notifReservas = notifReservas ?: it.notifReservas,
+            notifAlertas = notifAlertas ?: it.notifAlertas
+        )
+    }
 
-    override suspend fun changePassword(id: Long, actual: String, nueva: String) = Unit
+    val passwordChanges = mutableListOf<Pair<String, String>>()
+
+    override suspend fun changePassword(id: Long, actual: String, nueva: String) {
+        actionError?.let { throw UsuarioException(it) }
+        passwordChanges.add(actual to nueva)
+    }
     override suspend fun approve(id: Long) = action(id) { it.copy(estado = EstadoPerfil.Aprobado) }
     override suspend fun reject(id: Long, motivo: String): Usuario {
         lastRejectReason = motivo

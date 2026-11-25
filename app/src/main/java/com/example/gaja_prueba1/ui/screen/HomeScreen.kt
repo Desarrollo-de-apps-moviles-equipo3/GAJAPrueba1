@@ -21,8 +21,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -37,6 +39,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -59,6 +62,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
@@ -71,6 +75,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -379,18 +386,51 @@ fun HomeContent(
             }
 
             else -> {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(state.visibleSpaces.take(3), key = { it.id }) { space ->
-                        SpaceCard(
-                            space = space,
-                            distanceText = state.distanceTo(space)?.let(::formatDistance),
-                            weatherText = state.weather[space.id]?.summary,
-                            onReserveClick = { onReserveClick(space) },
-                            modifier = Modifier.animateItem()
-                        )
+                val featuredSpaces = state.visibleSpaces.take(3)
+                val carouselState = rememberLazyListState()
+                val currentPage by remember {
+                    derivedStateOf {
+                        carouselState.firstVisibleItemIndex.coerceIn(0, featuredSpaces.lastIndex)
+                    }
+                }
+                Column {
+                    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                        val cardWidth = (maxWidth - 56.dp).coerceAtMost(380.dp)
+                        LazyRow(
+                            state = carouselState,
+                            contentPadding = PaddingValues(horizontal = 24.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(featuredSpaces, key = { it.id }) { space ->
+                                SpaceCard(
+                                    space = space,
+                                    distanceText = state.distanceTo(space)?.let(::formatDistance),
+                                    weatherText = state.weather[space.id]?.summary,
+                                    onReserveClick = { onReserveClick(space) },
+                                    modifier = Modifier.width(cardWidth).animateItem()
+                                )
+                            }
+                        }
+                    }
+                    if (featuredSpaces.size > 1) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            featuredSpaces.indices.forEach { page ->
+                                Box(
+                                    modifier = Modifier
+                                        .padding(horizontal = 3.dp)
+                                        .size(if (page == currentPage) 16.dp else 7.dp, 7.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            if (page == currentPage) scheme.tertiary
+                                            else scheme.outlineVariant
+                                        )
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -794,15 +834,42 @@ private fun SpaceCard(
 
     GajaCard(
         modifier = modifier
-            .width(200.dp)
             .animateContentSize()
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(106.dp)
-                .background(Brush.verticalGradient(listOf(baseColor, baseColor.copy(alpha = 0.65f))))
+                .height(154.dp)
         ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                drawRect(Brush.verticalGradient(listOf(baseColor, baseColor.copy(alpha = 0.76f))))
+                val inset = 18.dp.toPx()
+                val courtLine = Color.White.copy(alpha = 0.8f)
+                drawRoundRect(
+                    color = courtLine,
+                    topLeft = Offset(inset, inset),
+                    size = Size(size.width - inset * 2, size.height - inset * 2),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(12.dp.toPx()),
+                    style = Stroke(width = 2.dp.toPx())
+                )
+                drawLine(
+                    color = courtLine,
+                    start = Offset(size.width / 2, inset),
+                    end = Offset(size.width / 2, size.height - inset),
+                    strokeWidth = 2.dp.toPx()
+                )
+                drawCircle(
+                    color = courtLine,
+                    radius = 24.dp.toPx(),
+                    center = Offset(size.width / 2, size.height / 2),
+                    style = Stroke(width = 2.dp.toPx())
+                )
+                drawCircle(
+                    color = Color.White.copy(alpha = 0.12f),
+                    radius = size.height * 0.42f,
+                    center = Offset(size.width * 0.92f, size.height * 0.12f)
+                )
+            }
             GajaStatusChip(
                 text = if (space.available) "Disponible" else "No disponible",
                 tone = if (space.available) GajaChipTone.Success else GajaChipTone.Danger,
@@ -817,21 +884,23 @@ private fun SpaceCard(
                     .align(Alignment.TopEnd)
                     .padding(10.dp)
             )
-        }
-        Column(modifier = Modifier.padding(14.dp)) {
             Text(
                 text = space.name,
-                color = scheme.onSurface,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = 16.dp, end = 16.dp, bottom = 14.dp),
+                color = Color.White,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Spacer(Modifier.height(6.dp))
+        }
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 13.dp)) {
             Text(
-                text = space.description,
+                text = space.tags.joinToString(" · ").ifBlank { space.category },
                 color = scheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 3,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             if (weatherText != null) {
@@ -842,7 +911,7 @@ private fun SpaceCard(
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium)
                 )
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(10.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -859,9 +928,13 @@ private fun SpaceCard(
                 Button(
                     onClick = onReserveClick,
                     enabled = space.available,
-                    modifier = Modifier.height(36.dp),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
-                    shape = MaterialTheme.shapes.small
+                    modifier = Modifier.height(40.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = scheme.tertiary,
+                        contentColor = scheme.onTertiary
+                    )
                 ) {
                     Text(
                         text = "Reservar",

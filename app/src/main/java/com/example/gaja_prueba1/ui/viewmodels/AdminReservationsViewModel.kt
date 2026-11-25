@@ -46,9 +46,10 @@ data class AdminReservationsUiState(
     val current: List<AdminReservation> get() = items[tab].orEmpty()
 }
 
-class AdminReservationsViewModel(application: Application) : AndroidViewModel(application) {
-
+class AdminReservationsViewModel @JvmOverloads constructor(
+    application: Application,
     private val repository: AdminReservationsRepository = RemoteAdminReservationsRepository()
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(AdminReservationsUiState())
     val uiState: StateFlow<AdminReservationsUiState> = _uiState.asStateFlow()

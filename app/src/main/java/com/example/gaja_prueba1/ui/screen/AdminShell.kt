@@ -42,6 +42,7 @@ import com.example.gaja_prueba1.ui.screen.admin.AdminAgendaScreen
 import com.example.gaja_prueba1.ui.screen.admin.AdminSpacesAndCategoriesScreen
 import com.example.gaja_prueba1.ui.screen.admin.AdminReservationsScreen
 import com.example.gaja_prueba1.ui.screen.admin.AdminHomeScreen
+import com.example.gaja_prueba1.ui.screen.admin.AdminProfilesScreen
 
 /** Pestañas de la barra inferior del administrador (según el Figma). */
 enum class AdminTab(val label: String, val icon: ImageVector) {
@@ -157,7 +158,8 @@ fun AdminShell(
                     onCreateUser = { selectedIndex = AdminTab.Perfiles.ordinal },
                     onReports = { menuDestination = "Reportes" }
                 )
-            } else if (menuDestination == null && tabs[selectedIndex] == AdminTab.Reservas) {
+            } else if (menuDestination == null && tabs[selectedIndex] == AdminTab.Perfiles) {
+                AdminProfilesScreen(modifier = Modifier.padding(innerPadding))
             } else {
                 Box(
                     modifier = Modifier

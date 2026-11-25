@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -42,6 +43,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
@@ -89,7 +91,6 @@ import com.example.gaja_prueba1.ui.viewmodels.NearbyState
 import com.example.gaja_prueba1.ui.viewmodels.WeatherStatus
 import com.example.gaja_prueba1.util.NearbyLocationProvider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.example.gaja_prueba1.R
@@ -98,11 +99,14 @@ import com.example.gaja_prueba1.ui.components.GajaChipTone
 import com.example.gaja_prueba1.ui.components.GajaStatCard
 import com.example.gaja_prueba1.ui.components.GajaStatusChip
 import com.example.gaja_prueba1.ui.theme.GAJAPrueba1Theme
+import com.example.gaja_prueba1.ui.theme.extendedColors
 import androidx.compose.material3.LocalContentColor
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+
+private val CHILE_SPANISH = Locale.forLanguageTag("es-CL")
 
 @Composable
 fun HomeScreen(
@@ -184,17 +188,19 @@ fun HomeContent(
     onBrowseCourts: () -> Unit = {}
 ) {
     val scheme = MaterialTheme.colorScheme
-    val gradientTop = lerp(scheme.primary, scheme.secondary, 0.2f)
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(gradientTop, scheme.primary)))
+            .background(scheme.background)
             .statusBarsPadding()
             .verticalScroll(rememberScrollState())
     ) {
         Box(
-            modifier = Modifier.fillMaxWidth().height(245.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(245.dp)
+                .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
         ) {
             Image(
                 painter = painterResource(R.drawable.escuela_militar_hero),
@@ -207,9 +213,24 @@ fun HomeContent(
                     Brush.verticalGradient(
                         0f to Color(0xCC0E2638),
                         0.42f to Color(0x44102536),
-                        1f to Color(0xF20E2638)
+                        1f to scheme.primary.copy(alpha = 0.9f)
                     )
                 )
+            )
+            // Formas geométricas sutiles: aportan color sin competir con la foto.
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .offset(x = 32.dp, y = 22.dp)
+                    .size(128.dp)
+                    .background(Color.White.copy(alpha = 0.09f), CircleShape)
+            )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .offset(x = (-24).dp, y = 36.dp)
+                    .size(58.dp)
+                    .background(Color(0xFFE0B13C).copy(alpha = 0.78f), CircleShape)
             )
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
                 HomeHeader(unreadAlertCount = alerts.count { !it.leida })
@@ -252,16 +273,19 @@ fun HomeContent(
                 value = if (state.isLoading) null else state.availableSpaces,
                 label = "Áreas disponibles",
                 highlight = true,
+                containerColor = com.example.gaja_prueba1.ui.theme.EspaciosPalette.GreenSoft,
                 modifier = Modifier.weight(1f)
             )
             CounterCard(
                 value = if (state.isLoading) null else state.upcomingReservations,
                 label = "Próximas reservas",
+                containerColor = com.example.gaja_prueba1.ui.theme.EspaciosPalette.Beige,
                 modifier = Modifier.weight(1f)
             )
             CounterCard(
                 value = if (state.isLoading) null else state.pastReservations,
                 label = "Historial de reservas",
+                containerColor = scheme.surfaceContainerLowest,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -299,26 +323,29 @@ fun HomeContent(
 
         Text(
             text = "Canchas destacadas",
-            color = scheme.onPrimary,
+            color = scheme.onBackground,
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
             modifier = Modifier.padding(horizontal = 24.dp)
         )
         if (state.weatherStatus == WeatherStatus.Error && !state.isLoading && state.errorMessage == null) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            GajaCard(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                containerColor = scheme.errorContainer
             ) {
-                Text(
-                    text = "Sin conexión: no pudimos cargar el clima.",
-                    color = scheme.onPrimary.copy(alpha = 0.8f),
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.weight(1f)
-                )
-                TextButton(onClick = onWeatherRetry) {
-                    Text("Reintentar", color = scheme.onPrimary)
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Filled.CloudOff, contentDescription = null, tint = scheme.onErrorContainer)
+                    Text(
+                        text = "No pudimos cargar el clima.",
+                        color = scheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f).padding(start = 8.dp)
+                    )
+                    TextButton(onClick = onWeatherRetry) {
+                        Text("Reintentar", color = scheme.onErrorContainer)
+                    }
                 }
             }
         }
@@ -332,7 +359,7 @@ fun HomeContent(
                         .height(220.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = scheme.onPrimary)
+                    CircularProgressIndicator(color = scheme.primary)
                 }
             }
 
@@ -408,11 +435,11 @@ private fun WeekReservationsSection(
         ) {
             Text(
                 text = "Mi semana",
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
             )
             TextButton(onClick = onViewReservations) {
-                Text("Calendario  ›", color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f), fontSize = 11.sp)
+                Text("Calendario  ›", color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
             }
         }
 
@@ -437,7 +464,7 @@ private fun WeekReservationsSection(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = SimpleDateFormat("EEEEE", Locale("es", "CL")).format(Date(day)).uppercase(),
+                            text = SimpleDateFormat("EEEEE", CHILE_SPANISH).format(Date(day)).uppercase(),
                             color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 9.sp
                         )
@@ -481,7 +508,7 @@ private fun WeekReservationsSection(
                                 Text(reservation.horario, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                             }
                             Text(
-                                reservation.estado.lowercase().replaceFirstChar { it.titlecase(Locale("es", "CL")) },
+                                reservation.estado.lowercase().replaceFirstChar { it.titlecase(CHILE_SPANISH) },
                                 color = MaterialTheme.colorScheme.tertiary,
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.SemiBold
@@ -506,12 +533,12 @@ private fun HomeAlertsSection(alerts: List<AlertResponse>) {
         ) {
             Text(
                 text = "Alertas",
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
             )
             if (alerts.size > 2) {
                 TextButton(onClick = { showAll = !showAll }) {
-                    Text(if (showAll) "Ver menos" else "Ver todas", color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f), fontSize = 11.sp)
+                    Text(if (showAll) "Ver menos" else "Ver todas", color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
                 }
             }
         }
@@ -541,7 +568,7 @@ private fun HomeAlertsSection(alerts: List<AlertResponse>) {
                                 Icon(Icons.Filled.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(17.dp))
                             }
                             Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
-                                Text(alert.mensaje, color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(alert.mensaje, color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                 Text(homeAlertTime(alert.creadaEn), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                             }
                             if (!alert.leida) {
@@ -639,7 +666,8 @@ private fun CounterCard(
     value: Int?,
     label: String,
     modifier: Modifier = Modifier,
-    highlight: Boolean = false
+    highlight: Boolean = false,
+    containerColor: Color
 ) {
     val animated by animateIntAsState(
         targetValue = value ?: 0,
@@ -650,7 +678,8 @@ private fun CounterCard(
         value = if (value == null) "–" else animated.toString(),
         label = label,
         modifier = modifier,
-        highlight = highlight
+        highlight = highlight,
+        containerColor = containerColor
     )
 }
 
@@ -667,7 +696,7 @@ private fun NearbyControls(
             OutlinedButton(
                 onClick = onNearbyClear,
                 shape = CircleShape,
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = scheme.onPrimary)
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = scheme.primary)
             ) {
                 Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
@@ -678,7 +707,7 @@ private fun NearbyControls(
                 onClick = onNearbyClick,
                 enabled = nearby != NearbyState.Locating,
                 shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(
+                    colors = ButtonDefaults.buttonColors(
                     containerColor = scheme.tertiary,
                     contentColor = scheme.onTertiary
                 )
@@ -707,19 +736,33 @@ private fun NearbyControls(
             exit = fadeOut() + shrinkVertically()
         ) {
             Column(modifier = Modifier.padding(top = 8.dp)) {
-                Text(
-                    text = message.orEmpty(),
-                    color = if (nearby == NearbyState.Active) scheme.onPrimary.copy(alpha = 0.85f)
-                    else scheme.errorContainer,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                if (nearby == NearbyState.PermissionBlocked) {
-                    TextButton(onClick = onOpenSettings) {
+                GajaCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    containerColor = if (nearby == NearbyState.Active) {
+                        MaterialTheme.extendedColors.successContainer
+                    } else {
+                        scheme.errorContainer
+                    }
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
-                            text = "Abrir ajustes",
-                            color = scheme.tertiary,
-                            fontWeight = FontWeight.SemiBold
+                            text = message.orEmpty(),
+                            modifier = Modifier.weight(1f),
+                            color = if (nearby == NearbyState.Active) {
+                                MaterialTheme.extendedColors.onSuccessContainer
+                            } else {
+                                scheme.onErrorContainer
+                            },
+                            style = MaterialTheme.typography.bodySmall
                         )
+                        if (nearby == NearbyState.PermissionBlocked) {
+                            TextButton(onClick = onOpenSettings) {
+                                Text("Ajustes", color = scheme.onErrorContainer, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
                     }
                 }
             }
@@ -833,28 +876,45 @@ private fun SpaceCard(
 @Composable
 private fun MessageBlock(text: String, actionLabel: String? = null, onAction: () -> Unit = {}) {
     val scheme = MaterialTheme.colorScheme
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+    GajaCard(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),
+        containerColor = if (actionLabel != null) scheme.errorContainer else scheme.secondaryContainer
     ) {
-        Text(
-            text = text,
-            color = scheme.onPrimary.copy(alpha = 0.85f),
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center
-        )
-        if (actionLabel != null) {
-            Spacer(Modifier.height(12.dp))
-            Button(
-                onClick = onAction,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = scheme.tertiary,
-                    contentColor = scheme.onTertiary
-                )
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier.size(48.dp).background(
+                    if (actionLabel != null) scheme.error.copy(alpha = 0.12f) else scheme.tertiaryContainer,
+                    CircleShape
+                ),
+                contentAlignment = Alignment.Center
             ) {
-                Text(actionLabel)
+                Icon(
+                    imageVector = if (actionLabel != null) Icons.Filled.CloudOff else Icons.Filled.Search,
+                    contentDescription = null,
+                    tint = if (actionLabel != null) scheme.error else scheme.secondary
+                )
+            }
+            Text(
+                text = text,
+                modifier = Modifier.padding(top = 12.dp),
+                color = if (actionLabel != null) scheme.onErrorContainer else scheme.onSecondaryContainer,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
+            )
+            if (actionLabel != null) {
+                Button(
+                    onClick = onAction,
+                    modifier = Modifier.padding(top = 12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = scheme.tertiary,
+                        contentColor = scheme.onTertiary
+                    )
+                ) {
+                    Text(actionLabel)
+                }
             }
         }
     }

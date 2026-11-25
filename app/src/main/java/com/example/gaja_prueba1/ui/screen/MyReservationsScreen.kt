@@ -59,6 +59,11 @@ private enum class ReservationTab(val label: String) {
     CANCELADAS("Canceladas")
 }
 
+private data class ReservationDetailStatus(
+    val label: String,
+    val message: String? = null
+)
+
 @Composable
 fun MyReservationsScreen(
     email: String,
@@ -81,6 +86,21 @@ fun MyReservationsScreen(
         mutableStateOf(ReservationTab.PENDIENTES.name)
     }
     val selectedTab = ReservationTab.valueOf(selectedTabName)
+
+    if (state.cancellationCompleted) {
+        ReservationCancelledScreen(
+            reservation = state.cancelledReservation,
+            onViewCancelled = {
+                selectedTabName = ReservationTab.CANCELADAS.name
+                viewModel.clearCancellationCompleted()
+            },
+            onHome = {
+                viewModel.clearCancellationCompleted()
+                onBack()
+            }
+        )
+        return
+    }
 
     val today = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(Date())
 
@@ -210,6 +230,44 @@ fun MyReservationsScreen(
 
         Spacer(modifier = Modifier.size(16.dp))
 
+        state.cancelError?.let { message ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = message,
+                    modifier = Modifier.weight(1f),
+                    color = MaterialTheme.colorScheme.error
+                )
+                TextButton(onClick = viewModel::clearCancelError) {
+                    Text("Cerrar")
+                }
+            }
+        }
+
+        if (state.error != null && reservations.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = state.error.orEmpty(),
+                    modifier = Modifier.weight(1f),
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 12.sp
+                )
+                TextButton(onClick = { viewModel.loadReservations(email) }) {
+                    Text("Reintentar")
+                }
+            }
+        }
+
         when {
             state.isLoading -> {
                 Column(
@@ -226,13 +284,11 @@ fun MyReservationsScreen(
                 }
             }
 
-            state.error != null -> {
-                Text(
-                    text = state.error.orEmpty(),
-                    modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
+            state.error != null && reservations.isEmpty() -> OfflineErrorScreen(
+                message = state.error.orEmpty(),
+                onRetry = { viewModel.loadReservations(email) },
+                modifier = Modifier.weight(1f)
+            )
 
             visibleReservations.isEmpty() -> {
                 Column(
@@ -315,35 +371,38 @@ fun MyReservationsScreen(
                 }
             }
         )
-        reservationDetail?.let { reservation ->
-            AlertDialog(
-                onDismissRequest = { reservationDetail = null },
-                title = { Text(reservation.espacio) },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Fecha: ${formatDate(reservation.fecha)}")
-                        Text("Horario: ${reservation.horario}")
+    }
+
+    reservationDetail?.let { reservation ->
+        val detalleEstado = reservationDetailStatus(reservation)
+
+        AlertDialog(
+            onDismissRequest = { reservationDetail = null },
+            title = { Text(reservation.espacio) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Fecha: ${formatDate(reservation.fecha)}")
+                    Text("Horario: ${reservation.horario}")
+                    Text("Estado: ${detalleEstado.label}")
+                    detalleEstado.message?.let { Text(it) }
+                    Text("Motivo de la reserva: ${reservation.motivo}")
+
+                    if (reservation.estado.equals("RECHAZADA", ignoreCase = true)) {
                         Text(
-                            "Estado: " + reservation.estado.replaceFirstChar {
-                                it.titlecase(Locale.forLanguageTag("es-CL"))
-                            }
+                            text = "Motivo del rechazo: " +
+                                    (reservation.motivoRechazo?.takeIf { it.isNotBlank() } ?: "Sin motivo"),
+                            color = EspaciosPalette.Danger,
+                            fontWeight = FontWeight.SemiBold
                         )
-                        Text("Motivo de la reserva: ${reservation.motivo}")
-                        if (reservation.estado.equals("RECHAZADA", ignoreCase = true)) {
-                            Text(
-                                text = "Motivo del rechazo: " +
-                                        (reservation.motivoRechazo?.takeIf { it.isNotBlank() } ?: "Sin motivo"),
-                                color = EspaciosPalette.Danger,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
                     }
-                },
-                confirmButton = {
-                    TextButton(onClick = { reservationDetail = null }) { Text("Cerrar") }
                 }
-            )
-        }
+            },
+            confirmButton = {
+                TextButton(onClick = { reservationDetail = null }) {
+                    Text("Cerrar")
+                }
+            }
+        )
     }
 }
 
@@ -475,5 +534,66 @@ private fun formatDate(date: String): String {
         ).format(parsed).replaceFirstChar { it.titlecase(Locale("es", "CL")) }
     } catch (_: Exception) {
         date
+    }
+}
+
+
+private fun reservationDetailStatus(
+    reservation: ReservationResponse,
+    nowMillis: Long = System.currentTimeMillis()
+): ReservationDetailStatus {
+    val estado = reservation.estado.uppercase(Locale.ROOT)
+
+    if (estado == "RECHAZADA") {
+        return ReservationDetailStatus("Rechazada")
+    }
+
+    if (estado == "CANCELADA") {
+        return ReservationDetailStatus("Cancelada")
+    }
+
+    val horas = reservation.horario.split("-")
+    val inicio = horas.getOrNull(0)?.trim()
+        ?.let { parseReservationTime(reservation.fecha, it) }
+    val termino = horas.getOrNull(1)?.trim()
+        ?.let { parseReservationTime(reservation.fecha, it) }
+
+    if (inicio != null && termino != null) {
+        if (estado == "PENDIENTE" && nowMillis >= inicio) {
+            return ReservationDetailStatus(
+                "Fuera de plazo",
+                "La solicitud sigue pendiente, pero el horario ya comenzó."
+            )
+        }
+
+        if (nowMillis >= termino) {
+            return ReservationDetailStatus(
+                "Pasada",
+                "El horario de esta reserva ya finalizó."
+            )
+        }
+
+        if (nowMillis >= inicio - 2 * 60 * 60 * 1000L) {
+            return ReservationDetailStatus(
+                "Fuera de plazo",
+                "El plazo para cancelar termina dos horas antes del inicio."
+            )
+        }
+    }
+
+    return when (estado) {
+        "PENDIENTE" -> ReservationDetailStatus("Pendiente")
+        "APROBADA" -> ReservationDetailStatus("Confirmada")
+        else -> ReservationDetailStatus(reservation.estado)
+    }
+}
+
+private fun parseReservationTime(fecha: String, hora: String): Long? {
+    return try {
+        SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ROOT).apply {
+            isLenient = false
+        }.parse("$fecha $hora")?.time
+    } catch (_: Exception) {
+        null
     }
 }

@@ -32,6 +32,7 @@ import com.example.gaja_prueba1.ui.screen.ComingSoonScreen
 import com.example.gaja_prueba1.ui.screen.LoginScreen
 import com.example.gaja_prueba1.ui.screen.MainShellScreen
 import com.example.gaja_prueba1.ui.screen.MyReservationsScreen
+import com.example.gaja_prueba1.ui.screen.AlertasScreen
 import com.example.gaja_prueba1.ui.screen.ProfileScreen
 import com.example.gaja_prueba1.ui.theme.GAJAPrueba1Theme
 import kotlinx.coroutines.launch
@@ -186,6 +187,13 @@ class MainActivity : ComponentActivity() {
                                                     onPersonalData = {},
                                                     onChangePassword = {},
                                                     onLogout = onLogout
+                                                )
+                                            }
+
+                                            BottomTab.Alertas -> {
+                                                AlertasScreen(
+                                                    email = session.email,
+                                                    onBack = onBackHome
                                                 )
                                             }
 

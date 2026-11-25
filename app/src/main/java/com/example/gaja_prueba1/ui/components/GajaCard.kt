@@ -52,16 +52,15 @@ fun GajaStatCard(
     value: String,
     label: String,
     modifier: Modifier = Modifier,
-    highlight: Boolean = false
+    highlight: Boolean = false,
+    containerColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    contentColor: Color? = null
 ) {
-    val color = if (highlight) {
-        MaterialTheme.extendedColors.success
-    } else {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    }
+    val color = contentColor ?: if (highlight) MaterialTheme.extendedColors.success
+    else MaterialTheme.colorScheme.onPrimaryContainer
     Column(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.large)
+            .background(containerColor, MaterialTheme.shapes.large)
             .padding(vertical = 14.dp, horizontal = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

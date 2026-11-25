@@ -75,7 +75,7 @@ private fun TicketStatus.tone() = when (this) {
 // ---------------- Lista ----------------
 
 @Composable
-private fun TicketList(state: SupportUiState, vm: AdminSupportViewModel) {
+private fun TicketList(state: AdminSupportUiState, vm: AdminSupportViewModel) {
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         ScreenHeader("Soporte")
 
@@ -147,7 +147,7 @@ private fun TicketList(state: SupportUiState, vm: AdminSupportViewModel) {
 private val quickReplies = listOf("Revisaremos tu caso", "Ya está resuelto")
 
 @Composable
-private fun TicketDetail(ticket: SupportTicket, state: SupportUiState, vm: AdminSupportViewModel) {
+private fun TicketDetail(ticket: SupportTicket, state: AdminSupportUiState, vm: AdminSupportViewModel) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -224,7 +224,7 @@ private fun TicketDetail(ticket: SupportTicket, state: SupportUiState, vm: Admin
 // ---------------- Contacto visible ----------------
 
 @Composable
-private fun ContactEditor(state: SupportUiState, vm: AdminSupportViewModel) {
+private fun ContactEditor(state: AdminSupportUiState, vm: AdminSupportViewModel) {
     val draft = state.contactDraft
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),

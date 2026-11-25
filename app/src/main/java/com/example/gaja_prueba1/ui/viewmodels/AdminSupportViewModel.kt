@@ -40,7 +40,7 @@ object ContactValidator {
     }
 }
 
-data class SupportUiState(
+data class AdminSupportUiState(
     val filter: TicketStatus = TicketStatus.NUEVA,
     val tickets: List<SupportTicket> = sampleTickets(),
     val selectedCode: String? = null,
@@ -75,8 +75,8 @@ private fun sampleTickets() = listOf(
 /** Soporte del administrador. Por ahora trabaja con datos locales (no hay servicio de soporte aún). */
 class AdminSupportViewModel : ViewModel() {
 
-    private val _uiState = MutableStateFlow(SupportUiState())
-    val uiState: StateFlow<SupportUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(AdminSupportUiState())
+    val uiState: StateFlow<AdminSupportUiState> = _uiState.asStateFlow()
 
     fun onFilter(status: TicketStatus) = _uiState.update { it.copy(filter = status) }
 

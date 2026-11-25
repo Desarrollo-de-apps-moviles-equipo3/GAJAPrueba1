@@ -2,7 +2,7 @@ package com.example.gaja_prueba1.model
 
 import com.example.gaja_prueba1.data.remote.ActualizarEstadoDto
 import com.example.gaja_prueba1.data.remote.ReservaDto
-import com.example.gaja_prueba1.data.remote.ReservasApi
+import com.example.gaja_prueba1.data.remote.AdminReservasApi
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -17,7 +17,7 @@ class AdminReservationsRepositoryTest {
     )
 
     /** API falsa: guarda lo que le piden, igual que lo haría el servicio. */
-    private class FakeReservasApi(val data: MutableList<ReservaDto>) : ReservasApi {
+    private class FakeReservasApi(val data: MutableList<ReservaDto>) : AdminReservasApi {
         var lastFilter: String? = null
         var lastBody: ActualizarEstadoDto? = null
         var lastId: Long? = null

@@ -21,6 +21,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            enableUnitTestCoverage = true
+        }
         release {
             optimization {
                 enable = true
@@ -38,6 +41,10 @@ android {
     testOptions {
         // Los ViewModels llaman a android.util.Log: en tests de JVM devuelve valores por defecto en vez de fallar.
         unitTests.isReturnDefaultValues = true
+
+        testCoverage{
+            jacocoVersion = "0.8.12"
+        }
     }
 }
 
@@ -52,6 +59,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     testImplementation(libs.junit)
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    testImplementation("io.mockk:mockk:1.13.13")
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -52,6 +52,9 @@ data class Sesion(val id: Long, val fecha: String)
 interface UsuariosRepository {
     suspend fun getAll(): List<Usuario>
     suspend fun get(id: Long): Usuario
+
+    /** El perfil de quien tiene la sesión abierta. Falla con [UsuarioException] si no existe en el servicio. */
+    suspend fun getByEmail(email: String): Usuario
     suspend fun create(
         nombre: String,
         email: String,
@@ -93,6 +96,9 @@ class RemoteUsuariosRepository(
     override suspend fun getAll(): List<Usuario> = call { api.getUsuarios().map { it.toUsuario() } }
 
     override suspend fun get(id: Long): Usuario = call { api.getUsuario(id).toUsuario() }
+
+    override suspend fun getByEmail(email: String): Usuario =
+        call { api.getPorCorreo(email.trim()).toUsuario() }
 
     override suspend fun create(
         nombre: String,

@@ -31,6 +31,7 @@ import com.example.gaja_prueba1.ui.screen.BottomTab
 import com.example.gaja_prueba1.ui.screen.ComingSoonScreen
 import com.example.gaja_prueba1.ui.screen.LoginScreen
 import com.example.gaja_prueba1.ui.screen.MainShellScreen
+import com.example.gaja_prueba1.ui.screen.profile.ProfileFlow
 import com.example.gaja_prueba1.ui.screen.MyReservationsScreen
 import com.example.gaja_prueba1.ui.screen.AlertasScreen
 import com.example.gaja_prueba1.ui.screen.ProfileScreen
@@ -181,12 +182,10 @@ class MainActivity : ComponentActivity() {
                                             }
 
                                             BottomTab.Perfil -> {
-                                                ProfileScreen(
+                                                ProfileFlow(
                                                     fullName = userName,
                                                     email = session.email,
                                                     onMyReservations = onOpenReservations,
-                                                    onPersonalData = {},
-                                                    onChangePassword = {},
                                                     onLogout = onLogout
                                                 )
                                             }

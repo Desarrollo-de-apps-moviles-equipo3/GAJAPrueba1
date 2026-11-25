@@ -9,6 +9,8 @@ import com.example.gaja_prueba1.data.remote.RegistroRequestDto
 import com.example.gaja_prueba1.data.remote.SesionDto
 import com.example.gaja_prueba1.data.remote.UsuarioDto
 import com.example.gaja_prueba1.data.remote.UsuariosApi
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.HttpException
 
 /** API de usuarios falsa que guarda todo en memoria y puede simular un error del servicio. */
@@ -21,6 +23,7 @@ class InMemoryUsuariosApi : UsuariosApi {
     var lastCreate: RegistroRequestDto? = null
     var lastReject: RechazoDto? = null
     var lastUpdate: ActualizarRequestDto? = null
+    var lastEmailQuery: String? = null
 
     private fun check() {
         error?.let { throw it }
@@ -55,6 +58,18 @@ class InMemoryUsuariosApi : UsuariosApi {
     override suspend fun getUsuarios(estado: String?, rol: String?): List<UsuarioDto> {
         check()
         return users.filter { (estado == null || it.estado == estado) && (rol == null || it.rol == rol) }
+    }
+
+    override suspend fun getPorCorreo(email: String): UsuarioDto {
+        check()
+        lastEmailQuery = email
+        return users.firstOrNull { it.email.equals(email, ignoreCase = true) }
+            ?: throw HttpException(
+                retrofit2.Response.error<Any>(
+                    404,
+                    """{"error":"Usuario no encontrado"}""".toResponseBody("application/json".toMediaType())
+                )
+            )
     }
 
     override suspend fun getUsuario(id: Long): UsuarioDto {

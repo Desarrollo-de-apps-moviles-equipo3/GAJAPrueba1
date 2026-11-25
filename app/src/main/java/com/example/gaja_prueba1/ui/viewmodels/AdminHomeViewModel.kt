@@ -21,9 +21,10 @@ data class AdminHomeUiState(
     val dateLabel: String = ""
 )
 
-class AdminHomeViewModel(application: Application) : AndroidViewModel(application) {
-
+class AdminHomeViewModel @JvmOverloads constructor(
+    application: Application,
     private val repository: AdminHomeRepository = RemoteAdminHomeRepository()
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(AdminHomeUiState())
     val uiState: StateFlow<AdminHomeUiState> = _uiState.asStateFlow()

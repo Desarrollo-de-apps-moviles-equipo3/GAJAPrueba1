@@ -1,6 +1,5 @@
 package com.example.gaja_prueba1.model
 
-import com.example.gaja_prueba1.data.ReservationEntity
 import com.example.gaja_prueba1.data.remote.BloqueoDto
 import com.example.gaja_prueba1.validation.ReservationValidator
 import java.text.SimpleDateFormat
@@ -25,7 +24,7 @@ object SpaceAvailability {
         slot: String,
         todayIso: String,
         blocks: List<BloqueoDto>,
-        reservations: List<ReservationEntity>
+        reservations: List<Booking>
     ): SlotStatus = when {
         isoDate < todayIso -> SlotStatus.Pasado
         blockFor(space, isoDate, slot, blocks) != null -> SlotStatus.Bloqueado
@@ -42,7 +41,7 @@ object SpaceAvailability {
         isoDate: String,
         todayIso: String,
         blocks: List<BloqueoDto>,
-        reservations: List<ReservationEntity>
+        reservations: List<Booking>
     ): List<Pair<String, SlotStatus>> = ReservationValidator.SLOTS.map { slot ->
         slot to slotStatus(space, isoDate, slot, todayIso, blocks, reservations)
     }
@@ -52,7 +51,7 @@ object SpaceAvailability {
         isoDate: String,
         todayIso: String,
         blocks: List<BloqueoDto>,
-        reservations: List<ReservationEntity>
+        reservations: List<Booking>
     ): Int = daySlots(space, isoDate, todayIso, blocks, reservations).count { it.second == SlotStatus.Libre }
 
     /** Los 7 días (lunes a domingo) de la semana de [nowMillis], desplazada [weekOffset] semanas. */

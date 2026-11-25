@@ -62,7 +62,7 @@ fun AllCourtsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(EspaciosPalette.White)
+            .background(EspaciosPalette.Cream)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(end = 18.dp, top = 8.dp, bottom = 4.dp),
@@ -93,26 +93,29 @@ fun AllCourtsScreen(
             fontSize = 14.sp
         )
 
-        if (isLoading || errorMessage != null || spaces.isEmpty()) {
-            Column(
-                modifier = Modifier.fillMaxWidth().weight(1f).padding(horizontal = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                contentAlignment = Alignment.Center
             ) {
-                when {
-                    isLoading -> CircularProgressIndicator(color = EspaciosPalette.Navy)
-                    errorMessage != null -> {
-                        Text(errorMessage, color = EspaciosPalette.Slate, fontSize = 13.sp)
-                        Button(onClick = onRetry, modifier = Modifier.padding(top = 12.dp)) {
-                            Text("Reintentar")
-                        }
-                    }
-                    else -> Text(
-                        text = "No hay canchas registradas todavía.",
-                        color = EspaciosPalette.Slate,
-                        fontSize = 13.sp
-                    )
-                }
+                CircularProgressIndicator(color = EspaciosPalette.Navy)
+            }
+        } else if (errorMessage != null) {
+            OfflineErrorScreen(
+                message = errorMessage,
+                onRetry = onRetry,
+                modifier = Modifier.weight(1f)
+            )
+        } else if (spaces.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxWidth().weight(1f).padding(horizontal = 24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Aún no hay canchas registradas.",
+                    color = EspaciosPalette.Slate,
+                    fontSize = 13.sp
+                )
             }
         } else {
             LazyColumn(

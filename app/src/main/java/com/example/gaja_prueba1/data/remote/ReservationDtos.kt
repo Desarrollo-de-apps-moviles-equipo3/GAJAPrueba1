@@ -16,5 +16,6 @@ data class ReservationResponse(
     val horario: String,
     val motivo: String,
     val estado: String,
-    val creadaEn: String
+    val creadaEn: String,
+    val motivoRechazo: String? = null
 )

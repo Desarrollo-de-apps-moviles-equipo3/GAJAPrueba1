@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +47,7 @@ import com.example.gaja_prueba1.model.SlotStatus
 import com.example.gaja_prueba1.model.Space
 import com.example.gaja_prueba1.model.SpaceAvailability
 import com.example.gaja_prueba1.ui.components.GajaButton
+import com.example.gaja_prueba1.ui.components.GajaCard
 import com.example.gaja_prueba1.ui.components.GajaFilterChip
 import com.example.gaja_prueba1.ui.theme.EspaciosPalette
 import com.example.gaja_prueba1.ui.viewmodels.CalendarMode
@@ -190,12 +192,23 @@ fun CalendarContent(
 
 @Composable
 private fun ErrorRow(message: String, onRetry: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(message, color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f))
-        TextButton(onClick = onRetry) { Text("Reintentar") }
+    val scheme = MaterialTheme.colorScheme
+    GajaCard(modifier = Modifier.fillMaxWidth(), containerColor = scheme.errorContainer) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Filled.CloudOff, contentDescription = null, tint = scheme.onErrorContainer)
+            Text(
+                message,
+                color = scheme.onErrorContainer,
+                modifier = Modifier.weight(1f).padding(start = 9.dp),
+                style = MaterialTheme.typography.bodySmall
+            )
+            TextButton(onClick = onRetry) {
+                Text("Reintentar", color = scheme.onErrorContainer)
+            }
+        }
     }
 }
 

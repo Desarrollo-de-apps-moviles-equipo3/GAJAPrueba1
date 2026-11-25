@@ -1,6 +1,5 @@
 package com.example.gaja_prueba1.model
 
-import com.example.gaja_prueba1.data.ReservationEntity
 import com.example.gaja_prueba1.data.remote.BloqueoDto
 import com.example.gaja_prueba1.validation.ReservationValidator
 
@@ -11,7 +10,7 @@ import com.example.gaja_prueba1.validation.ReservationValidator
 data class BlockPlan(
     val toCreate: List<String>,
     val toDelete: List<BloqueoDto>,
-    val affected: List<ReservationEntity>
+    val affected: List<Booking>
 ) {
     val hasChanges: Boolean get() = toCreate.isNotEmpty() || toDelete.isNotEmpty()
 }
@@ -27,7 +26,7 @@ object BlockPlanner {
         day: String,
         checked: Set<String>,
         blocks: List<BloqueoDto>,
-        reservations: List<ReservationEntity>
+        reservations: List<Booking>
     ): BlockPlan {
         val current = initialChecked(space, day, blocks)
         val toCreate = ReservationValidator.SLOTS.filter { it in checked && it !in current }

@@ -1,6 +1,5 @@
 package com.example.gaja_prueba1.model
 
-import com.example.gaja_prueba1.data.ReservationEntity
 import com.example.gaja_prueba1.data.remote.BloqueoDto
 import com.example.gaja_prueba1.data.remote.BloqueoRequestDto
 import com.example.gaja_prueba1.data.remote.BloqueosApi
@@ -25,7 +24,7 @@ class SpaceAvailabilityTest {
         BloqueoDto(1, spaceId, date, slot, reason)
 
     private fun reservation(space: String, date: String, slot: String) =
-        ReservationEntity(space = space, date = date, timeSlot = slot, reason = "Entrenamiento")
+        Booking(space = space, date = date, timeSlot = slot, reason = "Entrenamiento")
 
     private fun millis(year: Int, month0: Int, day: Int): Long =
         Calendar.getInstance().apply { clear(); set(year, month0, day, 12, 0) }.timeInMillis

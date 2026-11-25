@@ -1,7 +1,6 @@
 package com.example.gaja_prueba1.ui.viewmodels
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gaja_prueba1.model.AdminSpacesRepository
 import com.example.gaja_prueba1.model.RemoteAdminSpacesRepository
@@ -44,10 +43,13 @@ data class AdminSpacesUiState(
     val visible: List<Space> get() = if (showDisabled) disabled else active
 }
 
-class AdminSpacesViewModel(application: Application) : AndroidViewModel(application) {
-
-    // N5 conectado al servicio: lo que el admin cambia queda guardado y lo ve el usuario en el Inicio.
+/**
+ * El repositorio entra por el constructor: la app usa el que habla con el servicio (por defecto)
+ * y los tests le pasan uno falso. Lo que el admin cambia queda guardado y lo ve el usuario en el Inicio.
+ */
+class AdminSpacesViewModel(
     private val repository: AdminSpacesRepository = RemoteAdminSpacesRepository()
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AdminSpacesUiState())
     val uiState: StateFlow<AdminSpacesUiState> = _uiState.asStateFlow()

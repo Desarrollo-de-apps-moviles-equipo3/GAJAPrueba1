@@ -1,33 +1,24 @@
 package com.example.gaja_prueba1.model
 
+import com.example.gaja_prueba1.data.remote.ApiClient
+import com.example.gaja_prueba1.data.remote.ApiConfig
+import com.example.gaja_prueba1.data.remote.LoginRequestDto
+import com.example.gaja_prueba1.data.remote.UsuariosApi
+import com.google.gson.JsonParser
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import retrofit2.HttpException
+import java.io.IOException
 
-class AuthRepository {
-
-    private data class TestUser(
-        val email: String,
-        val password: String,
-        val role: String
-    )
-
-    private val testUsers = listOf(
-        TestUser("cadete@gaja.cl", "12345", "Cadete"),
-        TestUser("oficial@gaja.cl", "12345", "Oficial"),
-        TestUser(
-            "oficial.semana@gaja.cl",
-            "12345",
-            "Oficial de semana"
-        ),
-        TestUser(
-            "externo@gaja.cl",
-            "12345",
-            "Institución externa"
-        ),
-        TestUser("admin@gaja.cl", "12345", "Administrador")
-    )
+/**
+ * Inicio de sesión contra el microservicio de usuarios (puerto 8081).
+ * El servicio revisa correo, contraseña y rol, y también el estado del perfil:
+ * uno pendiente, rechazado o desactivado no entra y el servicio explica por qué.
+ */
+class AuthRepository(
+    private val api: UsuariosApi = ApiClient.create(ApiConfig.USUARIOS_URL, UsuariosApi::class.java)
+) {
 
     suspend fun loginUser(
         email: String,
@@ -36,15 +27,10 @@ class AuthRepository {
     ): LoginResult = withContext(Dispatchers.IO) {
 
         try {
-            delay(800)
-
             val normalizedEmail = email.trim().lowercase()
 
-            // Se conserva la cuenta del profesor.
-            if (
-                normalizedEmail == "profe_exe@duoc.cl" &&
-                password == "12345"
-            ) {
+            // Se conserva la cuenta del profesor: funciona con cualquier rol y sin el servicio.
+            if (normalizedEmail == "profe_exe@duoc.cl" && password == "12345") {
                 return@withContext LoginResult.Success(
                     token = "demo-token-profesor",
                     userId = normalizedEmail,
@@ -52,28 +38,36 @@ class AuthRepository {
                 )
             }
 
-            val user = testUsers.firstOrNull {
-                it.email == normalizedEmail &&
-                        it.password == password &&
-                        it.role == selectedRole
-            }
-
-            if (user != null) {
-                LoginResult.Success(
-                    token = "demo-token-${user.role.lowercase()}",
-                    userId = user.email,
-                    role = user.role
-                )
-            } else {
-                LoginResult.Error(
-                    Exception("Credenciales o rol incorrectos")
-                )
-            }
+            val response = api.login(LoginRequestDto(normalizedEmail, password, selectedRole))
+            LoginResult.Success(
+                token = response.token,
+                userId = response.email,
+                role = response.rol
+            )
 
         } catch (exception: CancellationException) {
             throw exception
+        } catch (exception: HttpException) {
+            // 401: datos incorrectos. 403: perfil pendiente, rechazado o desactivado.
+            LoginResult.Error(
+                Exception(exception.serverMessage() ?: "No pudimos iniciar sesión (error ${exception.code()})")
+            )
+        } catch (exception: IOException) {
+            LoginResult.Error(
+                Exception("No pudimos conectar con el servicio de usuarios. Revisa que esté encendido.")
+            )
         } catch (exception: Exception) {
             LoginResult.Error(exception)
         }
+    }
+}
+
+/** El servicio responde los errores como {"error": "mensaje"}. */
+private fun HttpException.serverMessage(): String? {
+    return try {
+        val raw = response()?.errorBody()?.string() ?: return null
+        JsonParser.parseString(raw).asJsonObject.get("error")?.asString
+    } catch (e: Exception) {
+        null
     }
 }

@@ -29,7 +29,7 @@ class BlockPlannerTest {
     @Test
     fun el_editor_parte_marcado_con_los_horarios_ya_bloqueados() {
         val blocks = listOf(block(1, "cancha-1", day, s2), block(2, "cancha-1", "2026-11-27", s1), block(3, "cancha-2", day, s1))
-        assertEquals(setOf(s2), BlockPlanner.initialChecked(cancha, day, blocks))
+        assertEquals(setOf("10:00 - 11:00", "11:00 - 12:00"), BlockPlanner.initialChecked(cancha, day, blocks))
     }
 
     @Test
@@ -50,8 +50,13 @@ class BlockPlannerTest {
 
     @Test
     fun sin_cambios_no_hay_nada_que_guardar() {
-        val blocks = listOf(block(7, "cancha-1", day, s1))
-        val plan = BlockPlanner.plan(cancha, day, setOf(s1), blocks, emptyList())
+        val firstHour = "08:00 - 09:00"
+        val secondHour = "09:00 - 10:00"
+        val blocks = listOf(
+            block(7, "cancha-1", day, firstHour),
+            block(8, "cancha-1", day, secondHour)
+        )
+        val plan = BlockPlanner.plan(cancha, day, setOf(firstHour, secondHour), blocks, emptyList())
         assertFalse(plan.hasChanges)
     }
 

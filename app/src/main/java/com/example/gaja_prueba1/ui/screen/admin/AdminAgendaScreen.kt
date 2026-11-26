@@ -133,7 +133,8 @@ private fun DayEditorDialog(
                 ReservationValidator.SLOTS.forEach { slot ->
                     val checked = slot in editor.checked
                     val reserved = state.reservations.any {
-                        it.space == space.name && it.date == editor.day && it.timeSlot.trim() == slot
+                        it.space == space.name && it.date == editor.day &&
+                                ReservationValidator.overlaps(it.timeSlot.trim(), slot)
                     }
                     val reason = SpaceAvailability.blockFor(space, editor.day, slot, state.blocks)
                         ?.reason?.takeIf { it.isNotBlank() }

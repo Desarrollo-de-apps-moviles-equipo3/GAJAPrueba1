@@ -29,6 +29,17 @@ class RemoteReservationsRepository(
         api.listarPorUsuario(email)
     }
 
+    suspend fun reglas(): ReservationRules = withContext(Dispatchers.IO) {
+        api.obtenerReglas().let {
+            ReservationRules(
+                maxDaysAhead = it.maxDiasAdelante,
+                cancellationLimitHours = it.horasLimiteCancelacion,
+                openingHour = it.horaApertura,
+                closingHour = it.horaCierre
+            )
+        }
+    }
+
     suspend fun horariosOcupados(
         fecha: String,
         espacio: String
@@ -42,5 +53,10 @@ class RemoteReservationsRepository(
     ): ReservationResponse =
         withContext(Dispatchers.IO) {
             api.cancelarReserva(id, email)
+        }
+
+    suspend fun ocultarParaUsuario(id: Long, email: String): ReservationResponse =
+        withContext(Dispatchers.IO) {
+            api.ocultarParaUsuario(id, email)
         }
 }

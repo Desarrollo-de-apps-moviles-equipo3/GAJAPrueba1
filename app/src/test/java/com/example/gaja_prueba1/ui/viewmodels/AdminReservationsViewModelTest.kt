@@ -35,6 +35,7 @@ class AdminReservationsViewModelTest {
         coEvery { getByStatus(EstadoReserva.PENDIENTE) } returns listOf(pending)
         coEvery { getByStatus(EstadoReserva.APROBADA) } returns listOf(approved)
         coEvery { getByStatus(EstadoReserva.RECHAZADA) } returns listOf(rejected)
+        coEvery { getAll() } returns listOf(pending, approved, rejected)
     }
 
     private fun viewModel(repository: AdminReservationsRepository = repo()) =

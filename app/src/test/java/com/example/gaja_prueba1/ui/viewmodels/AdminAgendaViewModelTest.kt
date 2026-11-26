@@ -19,8 +19,8 @@ class AdminAgendaViewModelTest {
     private val dayMillis = 24L * 60 * 60 * 1000
     private val tomorrow = ReservationValidator.toIsoDate(System.currentTimeMillis() + dayMillis)
     private val yesterday = ReservationValidator.toIsoDate(System.currentTimeMillis() - dayMillis)
-    private val slot1 = "08:00 - 10:00"
-    private val slot2 = "10:00 - 12:00"
+    private val slot1 = "08:00 - 09:00"
+    private val slot2 = "10:00 - 11:00"
 
     private fun vm(blocks: FakeBlocksRepository, bookings: List<Booking> = emptyList()) =
         AdminAgendaViewModel(FakeSpacesRepository(listOf(cancha)), blocks, FakeBookingsRepository(bookings))

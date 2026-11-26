@@ -28,13 +28,20 @@ object BlockPlanner {
         blocks: List<BloqueoDto>,
         reservations: List<Booking>
     ): BlockPlan {
-        val current = initialChecked(space, day, blocks)
-        val toCreate = ReservationValidator.SLOTS.filter { it in checked && it !in current }
-        val toDelete = blocks.filter {
-            it.spaceId == space.id && it.date == day && it.timeSlot.trim() !in checked
+        val dayBlocks = blocks.filter { it.spaceId == space.id && it.date == day }
+        val toDelete = dayBlocks.filter { block ->
+            ReservationValidator.SLOTS.any { hour ->
+                ReservationValidator.overlaps(block.timeSlot.trim(), hour) && hour !in checked
+            }
+        }
+        val toCreate = checked.filter { hour ->
+            dayBlocks.none { block ->
+                block !in toDelete && ReservationValidator.overlaps(block.timeSlot.trim(), hour)
+            }
         }
         val affected = reservations.filter {
-            it.space == space.name && it.date == day && it.timeSlot.trim() in toCreate
+            it.space == space.name && it.date == day &&
+                    toCreate.any { blockedHour -> ReservationValidator.overlaps(it.timeSlot.trim(), blockedHour) }
         }
         return BlockPlan(toCreate, toDelete, affected)
     }

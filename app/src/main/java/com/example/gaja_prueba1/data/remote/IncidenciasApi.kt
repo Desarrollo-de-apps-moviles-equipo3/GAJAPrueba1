@@ -3,6 +3,8 @@ package com.example.gaja_prueba1.data.remote
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PATCH
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 /** Respuesta de los contadores del servicio: {"cantidad": 2}. */
@@ -31,4 +33,12 @@ interface IncidenciasApi {
 
     @GET("api/incidencias/usuario")
     suspend fun getPorUsuario(@Query("email") email: String): List<IncidenciaDto>
+
+    /** Lista incidencias para el panel de administración. */
+    @GET("api/incidencias")
+    suspend fun listarTodas(): List<IncidenciaDto>
+
+    /** Marca una incidencia como resuelta en el servidor. */
+    @PATCH("api/incidencias/{id}/resolver")
+    suspend fun resolver(@Path("id") id: Long): IncidenciaDto
 }

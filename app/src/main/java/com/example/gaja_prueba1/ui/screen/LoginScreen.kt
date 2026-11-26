@@ -15,12 +15,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AdminPanelSettings
-import androidx.compose.material.icons.outlined.Apartment
-import androidx.compose.material.icons.outlined.AssignmentTurnedIn
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,7 +29,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gaja_prueba1.ui.components.GajaButton
-import com.example.gaja_prueba1.ui.components.GajaSelector
 import com.example.gaja_prueba1.ui.components.GajaTextField
 import com.example.gaja_prueba1.ui.theme.GAJAPrueba1Theme
 import com.example.gaja_prueba1.ui.viewmodels.LoginViewModel
@@ -47,7 +42,6 @@ fun LoginScreen(
     val loggedUser by viewModel.loggedUser.collectAsState()
     val email by viewModel.email.collectAsState()
     val password by viewModel.password.collectAsState()
-    val selectedRole by viewModel.selectedRole.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val loginMessage by viewModel.loginMessage.collectAsState()
     val isError by viewModel.isError.collectAsState()
@@ -66,13 +60,11 @@ fun LoginScreen(
     LoginForm(
         email = email,
         password = password,
-        selectedRole = selectedRole,
         isLoading = isLoading,
         loginMessage = loginMessage,
         isError = isError,
         emailError = emailError,
         passwordError = passwordError,
-        onRoleChange = viewModel::onRoleChange,
         onEmailChange = viewModel::onEmailChange,
         onPasswordChange = viewModel::onPasswordChange,
         onLoginClick = viewModel::onLoginClick,
@@ -84,13 +76,11 @@ fun LoginScreen(
 private fun LoginForm(
     email: String,
     password: String,
-    selectedRole: Int,
     isLoading: Boolean,
     loginMessage: String,
     isError: Boolean,
     emailError: String?,
     passwordError: String?,
-    onRoleChange: (Int) -> Unit,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onLoginClick: () -> Unit,
@@ -127,26 +117,6 @@ private fun LoginForm(
             text = "Ingresa con tu cuenta institucional.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.secondary
-        )
-
-        GajaSelector(
-            label = "Ingresar como",
-            options = listOf(
-                "Cadete",
-                "Oficial",
-                "Oficial de semana",
-                "Institución externa",
-                "Administrador"
-            ),
-            icons = listOf(
-                Icons.Outlined.Person,
-                Icons.Outlined.Shield,
-                Icons.Outlined.AssignmentTurnedIn,
-                Icons.Outlined.Apartment,
-                Icons.Outlined.AdminPanelSettings
-            ),
-            selectedIndex = selectedRole,
-            onSelect = onRoleChange
         )
 
         GajaTextField(
@@ -225,13 +195,11 @@ private fun LoginScreenPreview() {
         LoginForm(
             email = "",
             password = "",
-            selectedRole = 0,
             isLoading = false,
             loginMessage = "",
             isError = false,
             emailError = null,
             passwordError = null,
-            onRoleChange = {},
             onEmailChange = {},
             onPasswordChange = {},
             onLoginClick = {}

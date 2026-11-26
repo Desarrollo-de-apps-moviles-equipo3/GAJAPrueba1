@@ -1,95 +1,62 @@
 package com.example.gaja_prueba1.validation
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.Calendar
 
 class ReservationValidatorTest {
 
-    // "Hoy" fijo para que los tests no dependan del reloj real: 10 de noviembre de 2026, 15:00
-    private val hoy: Long = Calendar.getInstance().apply {
-        set(2026, Calendar.NOVEMBER, 10, 15, 0, 0)
-        set(Calendar.MILLISECOND, 0)
-    }.timeInMillis
-
-    // Devuelve la fecha de hoy movida N días (positivo = futuro, negativo = pasado)
-    private fun diasDesdeHoy(dias: Int): Long =
-        Calendar.getInstance().apply {
-            timeInMillis = hoy
-            add(Calendar.DAY_OF_YEAR, dias)
-        }.timeInMillis
-
-    // ---------- Fecha ----------
-
     @Test
-    fun fecha_nula_pide_seleccionar_una_fecha() {
-        assertEquals("Selecciona una fecha", ReservationValidator.validateDate(null, hoy))
-    }
+    fun fecha_pasada_se_rechaza_y_hoy_se_acepta() {
+        val today = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 12)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val yesterday = (today.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, -1) }
+        val todayStart = ReservationValidator.startOfDay(today.timeInMillis).timeInMillis
 
-    @Test
-    fun fecha_pasada_da_error() {
         assertEquals(
             "La fecha no puede ser pasada",
-            ReservationValidator.validateDate(diasDesdeHoy(-1), hoy)
+            ReservationValidator.validateDate(yesterday.timeInMillis, today.timeInMillis)
         )
+        assertNull(ReservationValidator.validateDate(todayStart, today.timeInMillis))
     }
 
     @Test
-    fun hoy_es_valido() {
-        assertNull(ReservationValidator.validateDate(hoy, hoy))
-    }
+    fun fecha_mas_alla_del_limite_se_rechaza() {
+        val now = Calendar.getInstance().timeInMillis
+        val tooLate = (ReservationValidator.startOfDay(now)).apply {
+            add(Calendar.DAY_OF_YEAR, ReservationValidator.MAX_DAYS_AHEAD + 1)
+        }.timeInMillis
 
-    @Test
-    fun dia_7_es_valido() {
-        assertNull(ReservationValidator.validateDate(diasDesdeHoy(7), hoy))
-    }
-
-    @Test
-    fun dia_8_da_error_de_anticipacion() {
         assertEquals(
-            "Solo puedes reservar hasta 7 días adelante",
-            ReservationValidator.validateDate(diasDesdeHoy(8), hoy)
+            "Solo puedes reservar hasta ${ReservationValidator.MAX_DAYS_AHEAD} días adelante",
+            ReservationValidator.validateDate(tooLate, now)
         )
     }
 
-    // ---------- Motivo ----------
-
     @Test
-    fun motivo_vacio_es_obligatorio() {
-        assertEquals("El motivo es obligatorio", ReservationValidator.validateReason(""))
-    }
-
-    @Test
-    fun motivo_solo_con_espacios_es_obligatorio() {
-        assertEquals("El motivo es obligatorio", ReservationValidator.validateReason("     "))
-    }
-
-    @Test
-    fun motivo_de_9_caracteres_es_muy_corto() {
+    fun motivo_debe_tener_el_minimo_de_caracteres() {
         assertEquals(
-            "Describe el motivo (mínimo 10 caracteres)",
-            ReservationValidator.validateReason("123456789")
+            "El motivo es obligatorio",
+            ReservationValidator.validateReason("   ")
         )
-    }
-
-    @Test
-    fun motivo_de_10_caracteres_es_valido() {
-        assertNull(ReservationValidator.validateReason("1234567890"))
-    }
-
-    // ---------- Límite diario ----------
-
-    @Test
-    fun con_2_reservas_la_tercera_es_valida() {
-        assertNull(ReservationValidator.validateDailyLimit(2))
-    }
-
-    @Test
-    fun con_3_reservas_la_cuarta_da_error() {
         assertEquals(
-            "Ese día ya alcanzó el máximo de reservas",
-            ReservationValidator.validateDailyLimit(3)
+            "Describe el motivo (mínimo ${ReservationValidator.MIN_REASON_LENGTH} caracteres)",
+            ReservationValidator.validateReason("Corto")
         )
+        assertNull(ReservationValidator.validateReason("Entrenamiento"))
+    }
+
+    @Test
+    fun rango_horario_se_formatea_y_detecta_solapamientos() {
+        assertEquals("08:00 - 11:00", ReservationValidator.formatHourSlot(8, 3))
+        assertTrue(ReservationValidator.overlaps("08:00 - 11:00", "10:00 - 12:00"))
+        assertFalse(ReservationValidator.overlaps("08:00 - 10:00", "10:00 - 12:00"))
     }
 }

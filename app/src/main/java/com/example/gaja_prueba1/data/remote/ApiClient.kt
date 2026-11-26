@@ -9,14 +9,13 @@ import java.util.concurrent.TimeUnit
 /**
  * Direcciones de los microservicios (repo GAJA-microservicios).
  *
- * 10.0.2.2 es la dirección con la que el EMULADOR de Android llega al
- * computador donde corren los servicios. En un celular real hay que usar
- * la IP del computador en la red (ej. http://192.168.1.50:8081/).
+ * El emulador de Android llega al computador mediante 10.0.2.2.
+ * En un celular real hay que usar la IPv4 del computador en la red local.
  *
  * Puertos acordados: usuarios 8081, espacios 8082, reservas 8083.
  */
 object ApiConfig {
-    private const val HOST = "http://192.168.1.22"
+    private const val HOST = "http://10.0.2.2"
 
     const val USUARIOS_URL = "$HOST:8081/"
     const val ESPACIOS_URL = "$HOST:8082/"

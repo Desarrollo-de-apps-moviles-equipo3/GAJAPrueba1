@@ -6,17 +6,37 @@ import java.util.Locale
 
 object ReservationValidator {
     const val MAX_DAYS_AHEAD = 7
-    const val MAX_PER_DAY = 3
     const val MIN_REASON_LENGTH = 10
+    const val OPENING_HOUR = 8
+    const val CLOSING_HOUR = 23
 
-    val SLOTS = listOf(
-        "08:00 - 10:00", "10:00 - 12:00", "12:00 - 14:00",
-        "14:00 - 16:00", "16:00 - 18:00", "18:00 - 20:00"
-    )
+    /** Bloques horarios de una hora usados por el administrador para bloquear la agenda. */
+    val SLOTS: List<String> = (OPENING_HOUR until CLOSING_HOUR).map { formatHourSlot(it) }
+
+    fun startHours(openingHour: Int = OPENING_HOUR, closingHour: Int = CLOSING_HOUR): List<Int> =
+        (openingHour until closingHour).toList()
+
+    fun formatHourSlot(startHour: Int, durationHours: Int = 1): String =
+        "%02d:00 - %02d:00".format(Locale.US, startHour, startHour + durationHours)
+
+    fun durationHours(slot: String): Int? = runCatching {
+        val parts = slot.split("-")
+        if (parts.size != 2) return null
+        val start = parts[0].trim().substringBefore(":").toInt()
+        val end = parts[1].trim().substringBefore(":").toInt()
+        (end - start).takeIf { it > 0 }
+    }.getOrNull()
+
+    fun overlaps(first: String, second: String): Boolean = runCatching {
+        val a = first.split("-").map { it.trim().substringBefore(":").toInt() }
+        val b = second.split("-").map { it.trim().substringBefore(":").toInt() }
+        a.size == 2 && b.size == 2 && a[0] < b[1] && b[0] < a[1]
+    }.getOrDefault(false)
 
     fun validateDate(
         selectedMillis: Long?,
-        nowMillis: Long = System.currentTimeMillis()
+        nowMillis: Long = System.currentTimeMillis(),
+        maxDaysAhead: Int = MAX_DAYS_AHEAD
     ): String? {
         if (selectedMillis == null) return "Selecciona una fecha"
 
@@ -24,13 +44,13 @@ object ReservationValidator {
         val selected = startOfDay(selectedMillis)
 
         val lastAllowed = (today.clone() as Calendar).apply {
-            add(Calendar.DAY_OF_YEAR, MAX_DAYS_AHEAD)
+            add(Calendar.DAY_OF_YEAR, maxDaysAhead)
         }
 
         return when {
             selected.before(today) -> "La fecha no puede ser pasada"
             selected.after(lastAllowed) ->
-                "Solo puedes reservar hasta $MAX_DAYS_AHEAD días adelante"
+                "Solo puedes reservar hasta $maxDaysAhead días adelante"
             else -> null
         }
     }
@@ -41,10 +61,6 @@ object ReservationValidator {
             "Describe el motivo (mínimo $MIN_REASON_LENGTH caracteres)"
         else -> null
     }
-
-    // Regla del límite diario. Recibe cuántas reservas ya existen ese día.
-    fun validateDailyLimit(reservationsThatDay: Int): String? =
-        if (reservationsThatDay >= MAX_PER_DAY) "Ese día ya alcanzó el máximo de reservas" else null
 
     // Formato para guardar y ordenar la fecha en Room.
     fun toIsoDate(millis: Long): String =

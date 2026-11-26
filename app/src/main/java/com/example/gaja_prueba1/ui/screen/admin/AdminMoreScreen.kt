@@ -23,6 +23,7 @@ data class AdminMenuEntry(val label: String, val icon: ImageVector)
 /** Destinos de "Más" (los mismos del menú lateral). */
 val adminMenuEntries = listOf(
     AdminMenuEntry("Espacios y categorías", Icons.Outlined.Apartment),
+    AdminMenuEntry("Alertas", Icons.Outlined.NotificationsActive),
     AdminMenuEntry("Incidencias", Icons.Outlined.WarningAmber),
     AdminMenuEntry("Reportes", Icons.Outlined.BarChart),
     AdminMenuEntry("Soporte y contacto", Icons.Outlined.Help),

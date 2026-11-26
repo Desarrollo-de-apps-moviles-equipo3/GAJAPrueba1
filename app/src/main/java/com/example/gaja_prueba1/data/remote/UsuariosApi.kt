@@ -9,7 +9,7 @@ import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
-data class LoginRequestDto(val email: String, val password: String, val rol: String)
+data class LoginRequestDto(val email: String, val password: String)
 
 data class LoginResponseDto(
     val id: Long,

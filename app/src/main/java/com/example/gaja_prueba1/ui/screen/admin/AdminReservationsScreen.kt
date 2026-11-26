@@ -13,11 +13,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -27,7 +29,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -36,6 +38,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -65,6 +68,8 @@ fun AdminReservationsScreen(
     viewModel: AdminReservationsViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    var historyQuery by rememberSaveable { mutableStateOf("") }
+    var historyStatus by rememberSaveable { mutableStateOf("Todos") }
     LaunchedEffect(Unit) { viewModel.load() }
     val snackbarHost = remember { SnackbarHostState() }
 
@@ -104,6 +109,10 @@ fun AdminReservationsScreen(
                 errorMessage = state.errorMessage,
                 counts = ReservationsTab.entries.associateWith { state.items[it].orEmpty().size },
                 items = state.current,
+                historyQuery = historyQuery,
+                onHistoryQueryChange = { historyQuery = it },
+                historyStatus = historyStatus,
+                onHistoryStatusChange = { historyStatus = it },
                 onTabSelected = viewModel::onTabSelected,
                 onOpen = viewModel::onOpenDetail,
                 onRetry = viewModel::load
@@ -134,12 +143,16 @@ private fun ReservationsListView(
     errorMessage: String?,
     counts: Map<ReservationsTab, Int>,
     items: List<AdminReservation>,
+    historyQuery: String,
+    onHistoryQueryChange: (String) -> Unit,
+    historyStatus: String,
+    onHistoryStatusChange: (String) -> Unit,
     onTabSelected: (ReservationsTab) -> Unit,
     onOpen: (AdminReservation) -> Unit,
     onRetry: () -> Unit
 ) {
     Column(Modifier.fillMaxSize()) {
-        TabRow(selectedTabIndex = tab.ordinal) {
+        ScrollableTabRow(selectedTabIndex = tab.ordinal) {
             ReservationsTab.entries.forEach { entry ->
                 Tab(
                     selected = entry == tab,
@@ -149,8 +162,55 @@ private fun ReservationsListView(
             }
         }
 
+        val filteredItems = if (tab == ReservationsTab.Historial) {
+            items.filter { reservation ->
+                reservation.userEmail.contains(historyQuery.trim(), ignoreCase = true) &&
+                        (historyStatus == "Todos" || reservation.status.name == historyStatus)
+            }.sortedByDescending { it.createdAt.orEmpty() }
+        } else items
+
+        if (tab == ReservationsTab.Historial) {
+            Column(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("Historial completo", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Incluye las reservas que el usuario quitó de su lista.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                OutlinedTextField(
+                    value = historyQuery,
+                    onValueChange = onHistoryQueryChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text("Buscar por correo del usuario") }
+                )
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf("Todos", "PENDIENTE", "APROBADA", "RECHAZADA", "CANCELADA").forEach { status ->
+                        FilterChip(
+                            selected = historyStatus == status,
+                            onClick = { onHistoryStatusChange(status) },
+                            label = {
+                                Text(when (status) {
+                                    "Todos" -> "Todos"
+                                    "PENDIENTE" -> "Pendientes"
+                                    "APROBADA" -> "Aprobadas"
+                                    "RECHAZADA" -> "Rechazadas"
+                                    else -> "Canceladas"
+                                })
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
         when {
-            isLoading && items.isEmpty() -> Box(Modifier.fillMaxSize(), Alignment.Center) {
+            isLoading && filteredItems.isEmpty() -> Box(Modifier.fillMaxSize(), Alignment.Center) {
                 CircularProgressIndicator()
             }
 
@@ -164,8 +224,8 @@ private fun ReservationsListView(
                 OutlinedButton(onClick = onRetry) { Text("Reintentar") }
             }
 
-            items.isEmpty() -> Box(Modifier.fillMaxSize(), Alignment.Center) {
-                Text("No hay reservas ${tab.label.lowercase()}")
+            filteredItems.isEmpty() -> Box(Modifier.fillMaxSize(), Alignment.Center) {
+                Text(if (tab == ReservationsTab.Historial) "No hay registros que coincidan con la búsqueda" else "No hay reservas ${tab.label.lowercase()}")
             }
 
             else -> LazyColumn(
@@ -173,12 +233,16 @@ private fun ReservationsListView(
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(items, key = { it.id }) { reservation ->
+                items(filteredItems, key = { it.id }) { reservation ->
                     GajaCard(modifier = Modifier.fillMaxWidth(), onClick = { onOpen(reservation) }) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(reservation.space, fontWeight = FontWeight.SemiBold)
                             Text("${reservation.date} · ${reservation.slot}")
                             Text(reservation.userEmail, style = MaterialTheme.typography.bodySmall)
+                            Text("Estado: ${reservation.status.etiqueta}", style = MaterialTheme.typography.bodySmall)
+                            if (reservation.hiddenForUser) {
+                                Text("Oculta para el usuario · registro conservado", style = MaterialTheme.typography.bodySmall)
+                            }
                         }
                     }
                 }

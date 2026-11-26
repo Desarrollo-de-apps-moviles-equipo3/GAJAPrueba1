@@ -16,10 +16,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Pestañas internas de la sección Reservas del administrador. */
-enum class ReservationsTab(val label: String, val status: EstadoReserva) {
+enum class ReservationsTab(val label: String, val status: EstadoReserva?) {
     Pendientes("Pendientes", EstadoReserva.PENDIENTE),
     Aprobadas("Aprobadas", EstadoReserva.APROBADA),
-    Rechazadas("Rechazadas", EstadoReserva.RECHAZADA)
+    Rechazadas("Rechazadas", EstadoReserva.RECHAZADA),
+    Historial("Historial", null)
 }
 
 data class RejectFormState(
@@ -63,7 +64,10 @@ class AdminReservationsViewModel @JvmOverloads constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
-                val lists = ReservationsTab.entries.associateWith { repository.getByStatus(it.status) }
+                val lists = ReservationsTab.entries.associateWith { tab ->
+                    if (tab == ReservationsTab.Historial) repository.getAll()
+                    else repository.getByStatus(requireNotNull(tab.status))
+                }
                 _uiState.update {
                     it.copy(
                         isLoading = false,

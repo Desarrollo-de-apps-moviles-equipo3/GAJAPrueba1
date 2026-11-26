@@ -25,8 +25,17 @@ interface ReservasApi {
         @Query("espacio") espacio: String
     ): List<String>
 
+    @GET("api/reservas/reglas")
+    suspend fun obtenerReglas(): ReglasReservaDto
+
     @PATCH("api/reservas/{id}/cancelar")
     suspend fun cancelarReserva(
+        @Path("id") id: Long,
+        @Query("email") email: String
+    ): ReservationResponse
+
+    @PATCH("api/reservas/{id}/ocultar")
+    suspend fun ocultarParaUsuario(
         @Path("id") id: Long,
         @Query("email") email: String
     ): ReservationResponse

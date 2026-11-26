@@ -26,8 +26,8 @@ class SpaceAvailabilityTest {
     private fun reservation(space: String, date: String, slot: String) =
         Booking(space = space, date = date, timeSlot = slot, reason = "Entrenamiento")
 
-    private fun millis(year: Int, month0: Int, day: Int): Long =
-        Calendar.getInstance().apply { clear(); set(year, month0, day, 12, 0) }.timeInMillis
+    private fun millis(year: Int, month0: Int, day: Int, hour: Int = 12): Long =
+        Calendar.getInstance().apply { clear(); set(year, month0, day, hour, 0) }.timeInMillis
 
     @Test
     fun sin_bloqueos_ni_reservas_el_horario_esta_libre() {
@@ -71,14 +71,20 @@ class SpaceAvailabilityTest {
     fun los_dias_anteriores_a_hoy_quedan_como_pasado() {
         val blocks = listOf(block("cancha-1", "2026-11-24", slot))
         assertEquals(SlotStatus.Pasado, SpaceAvailability.slotStatus(cancha, "2026-11-24", slot, today, blocks, emptyList()))
-        assertEquals(SlotStatus.Libre, SpaceAvailability.slotStatus(cancha, today, slot, today, emptyList(), emptyList()))
+        assertEquals(
+            SlotStatus.Libre,
+            SpaceAvailability.slotStatus(
+                cancha, today, slot, today, emptyList(), emptyList(),
+                nowMillis = millis(2026, Calendar.NOVEMBER, 25, 7)
+            )
+        )
     }
 
     @Test
     fun freeCount_descuenta_bloqueos_y_reservas() {
         val blocks = listOf(block("cancha-1", "2026-11-26", "08:00 - 10:00"))
         val reservations = listOf(reservation("Cancha 1", "2026-11-26", "10:00 - 12:00"))
-        assertEquals(4, SpaceAvailability.freeCount(cancha, "2026-11-26", today, blocks, reservations))
+        assertEquals(11, SpaceAvailability.freeCount(cancha, "2026-11-26", today, blocks, reservations))
     }
 
     @Test

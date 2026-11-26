@@ -1,8 +1,10 @@
 package com.example.gaja_prueba1.model
 
 import com.example.gaja_prueba1.data.remote.ActualizarEstadoDto
+import com.example.gaja_prueba1.data.remote.ActualizarReglasReservaDto
 import com.example.gaja_prueba1.data.remote.AdminReservasApi
 import com.example.gaja_prueba1.data.remote.ReservaDto
+import com.example.gaja_prueba1.data.remote.ReglasReservaDto
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -17,6 +19,9 @@ class BookingsRepositoryTest {
     private class FakeApi(val items: List<ReservaDto>) : AdminReservasApi {
         override suspend fun listar(estado: String?) = items
         override suspend fun actualizarEstado(id: Long, body: ActualizarEstadoDto): ReservaDto = items.first { it.id == id }
+        override suspend fun obtenerReglas() = ReglasReservaDto(7, 2, 8, 23)
+        override suspend fun actualizarReglas(body: ActualizarReglasReservaDto) =
+            ReglasReservaDto(body.maxDiasAdelante, body.horasLimiteCancelacion, 8, 23)
     }
 
     @Test

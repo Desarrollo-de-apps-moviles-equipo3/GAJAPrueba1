@@ -143,6 +143,21 @@ fun AdminShell(
                 menuDestination == "Espacios y categorías" ->
                     AdminSpacesAndCategoriesScreen(modifier = content)
 
+                menuDestination == "Alertas" ->
+                    AdminAlertsScreen(
+                        onOpenIncidents = { openDestination("Incidencias") },
+                        modifier = content
+                    )
+
+                menuDestination == "Incidencias" ->
+                    AdminIncidenciasScreen(userEmail = userEmail, modifier = content)
+
+                menuDestination == "Reportes" ->
+                    AdminReportsScreen(modifier = content)
+
+                menuDestination == "Reglas de reserva" ->
+                    AdminReservationRulesScreen(modifier = content)
+
                 menuDestination == "Soporte y contacto" ->
                     AdminSupportScreen(modifier = content)
 

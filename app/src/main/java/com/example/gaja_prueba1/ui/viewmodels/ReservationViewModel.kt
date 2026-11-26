@@ -7,6 +7,7 @@ import com.example.gaja_prueba1.model.BlocksRepository
 import com.example.gaja_prueba1.model.RemoteBlocksRepository
 import com.example.gaja_prueba1.model.RemoteReservationsRepository
 import com.example.gaja_prueba1.model.Space
+import com.example.gaja_prueba1.model.ReservationRules
 import com.example.gaja_prueba1.validation.ReservationValidator
 import com.example.gaja_prueba1.data.remote.CreateReservationRequest
 import kotlinx.coroutines.Job
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
 
 data class ReservationUiState(
@@ -26,6 +28,9 @@ data class ReservationUiState(
     val userEmail: String = "",
     val dateMillis: Long? = null,
     val selectedSlot: String? = null,
+    val selectedStartHour: Int? = null,
+    val selectedEndHour: Int? = null,
+    val rules: ReservationRules = ReservationRules(7, 2),
     val reason: String = "",
     val dateError: String? = null,
     val slotError: String? = null,
@@ -38,11 +43,12 @@ data class ReservationUiState(
     val saved: Boolean = false
 )
 
-class ReservationViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = RemoteReservationsRepository()
-
+class ReservationViewModel @JvmOverloads constructor(
+    application: Application,
+    private val repository: RemoteReservationsRepository = RemoteReservationsRepository(),
     // Los horarios que el administrador bloqueó viven en el servicio de espacios.
     private val blocksRepository: BlocksRepository = RemoteBlocksRepository()
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(ReservationUiState())
     val uiState: StateFlow<ReservationUiState> = _uiState.asStateFlow()
@@ -60,6 +66,15 @@ class ReservationViewModel(application: Application) : AndroidViewModel(applicat
                 space = space,
                 userEmail = userEmail
             )
+            viewModelScope.launch {
+                runCatching { repository.reglas() }.onSuccess { rules ->
+                    _uiState.update { current ->
+                        if (current.space?.id == space.id && current.userEmail == userEmail) {
+                            current.copy(rules = rules)
+                        } else current
+                    }
+                }
+            }
         }
     }
 
@@ -70,6 +85,8 @@ class ReservationViewModel(application: Application) : AndroidViewModel(applicat
             it.copy(
                 dateMillis = millis,
                 selectedSlot = null,
+                selectedStartHour = null,
+                selectedEndHour = null,
                 dateError = null,
                 slotError = null,
                 saveError = null,
@@ -89,7 +106,7 @@ class ReservationViewModel(application: Application) : AndroidViewModel(applicat
                 val occupied = coroutineScope {
                     val reserved = async { repository.horariosOcupados(isoDate, space.name) }
                     val blocked = async { blockedSlots(space, isoDate) }
-                    reserved.await() + blocked.await()
+                    Pair(reserved.await() + blocked.await(), repository.reglas())
                 }
 
                 _uiState.update { current ->
@@ -97,7 +114,8 @@ class ReservationViewModel(application: Application) : AndroidViewModel(applicat
                         current
                     } else {
                         current.copy(
-                            unavailableSlots = occupied,
+                            unavailableSlots = occupied.first,
+                            rules = occupied.second,
                             isLoadingSlots = false,
                             slotsError = null
                         )
@@ -125,20 +143,87 @@ class ReservationViewModel(application: Application) : AndroidViewModel(applicat
             .toSet()
 
     fun validateDateSelection(): Boolean {
-        val error = ReservationValidator.validateDate(_uiState.value.dateMillis)
+        val current = _uiState.value
+        val error = ReservationValidator.validateDate(current.dateMillis, maxDaysAhead = current.rules.maxDaysAhead)
         _uiState.update { it.copy(dateError = error) }
         return error == null
     }
 
-    fun onSlotSelected(slot: String) {
+    fun onTimeHourSelected(hour: Int) {
         val current = _uiState.value
-        if (slot in current.unavailableSlots || current.isLoadingSlots || current.slotsError != null) {
+        if (current.isLoadingSlots || current.slotsError != null) return
+
+        val startHour = current.selectedStartHour
+        if (startHour == null || (current.selectedEndHour != null && hour <= startHour)) {
+            if (hour >= current.rules.closingHour || maxAvailableDuration(current, hour) < 1) return
+            _uiState.update {
+                it.copy(
+                    selectedStartHour = hour,
+                    selectedEndHour = null,
+                    selectedSlot = null,
+                    slotError = null,
+                    saveError = null
+                )
+            }
+            return
+        }
+
+        if (hour <= startHour) {
+            if (hour < current.rules.closingHour && maxAvailableDuration(current, hour) > 0) {
+                _uiState.update {
+                    it.copy(
+                        selectedStartHour = hour,
+                        selectedEndHour = null,
+                        selectedSlot = null,
+                        slotError = null,
+                        saveError = null
+                    )
+                }
+            }
+            return
+        }
+        val duration = hour - startHour
+        if (duration > maxAvailableDuration(current, startHour)) {
+            _uiState.update { it.copy(slotError = "Ese rango no está disponible") }
             return
         }
 
         _uiState.update {
-            it.copy(selectedSlot = slot, slotError = null, saveError = null)
+            it.copy(
+                selectedEndHour = hour,
+                selectedSlot = ReservationValidator.formatHourSlot(startHour, duration),
+                slotError = null,
+                saveError = null
+            )
         }
+    }
+
+    fun onResetTimeSelection() {
+        _uiState.update {
+            it.copy(
+                selectedStartHour = null,
+                selectedEndHour = null,
+                selectedSlot = null,
+                slotError = null,
+                saveError = null
+            )
+        }
+    }
+
+    private fun maxAvailableDuration(state: ReservationUiState, startHour: Int): Int {
+        val selectedDate = state.dateMillis ?: return 0
+        val now = Calendar.getInstance()
+        val reservationDay = Calendar.getInstance().apply { timeInMillis = selectedDate }
+        val today = Calendar.getInstance()
+        val isToday = reservationDay.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+                reservationDay.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
+        if (isToday && startHour <= now.get(Calendar.HOUR_OF_DAY)) return 0
+        val closingRemaining = state.rules.closingHour - startHour
+        val upperBound = closingRemaining
+        return (1..upperBound).takeWhile { duration ->
+            val candidate = ReservationValidator.formatHourSlot(startHour, duration)
+            state.unavailableSlots.none { ReservationValidator.overlaps(candidate, it) }
+        }.lastOrNull() ?: 0
     }
 
     fun onReasonChanged(value: String) {
@@ -152,10 +237,14 @@ class ReservationViewModel(application: Application) : AndroidViewModel(applicat
 
         if (state.isSaving || state.isLoadingSlots || state.slotsError != null) return
 
-        val dateError = ReservationValidator.validateDate(state.dateMillis)
+        val dateError = ReservationValidator.validateDate(state.dateMillis, maxDaysAhead = state.rules.maxDaysAhead)
+        val selectedStartHour = state.selectedStartHour
+        val selectedEndHour = state.selectedEndHour
         val slotError = when {
-            state.selectedSlot == null -> "Selecciona un horario"
-            state.selectedSlot in state.unavailableSlots -> "Ese horario ya está ocupado"
+            selectedStartHour == null || selectedEndHour == null || state.selectedSlot == null -> "Selecciona la hora inicial y la hora final"
+            selectedEndHour <= selectedStartHour ||
+                    selectedEndHour - selectedStartHour > maxAvailableDuration(state, selectedStartHour) ->
+                "Ese rango ya no está disponible"
             else -> null
         }
         val reasonError = ReservationValidator.validateReason(state.reason)

@@ -9,6 +9,7 @@ import com.example.gaja_prueba1.model.RemoteReservationsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -16,6 +17,8 @@ data class MyReservationsUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val cancelError: String? = null,
+    val hideError: String? = null,
+    val hidingReservationId: Long? = null,
     val cancellationCompleted: Boolean = false,
     val cancelledReservation: ReservationResponse? = null
 )
@@ -46,6 +49,8 @@ class MyReservationsViewModel : ViewModel() {
 
             try {
                 _reservations.value = repository.listarPorUsuario(email.trim())
+                    .sortedByDescending { it.creadaEn }
+                    .take(10)
                 _uiState.value = _uiState.value.copy(isLoading = false, error = null)
             } catch (exception: CancellationException) {
                 throw exception
@@ -79,6 +84,8 @@ class MyReservationsViewModel : ViewModel() {
                 // conservamos la confirmación y el cambio local de estado.
                 try {
                     _reservations.value = repository.listarPorUsuario(email.trim())
+                        .sortedByDescending { it.creadaEn }
+                        .take(10)
                 } catch (exception: CancellationException) {
                     throw exception
                 } catch (_: Exception) {
@@ -105,6 +112,31 @@ class MyReservationsViewModel : ViewModel() {
 
     fun clearCancelError() {
         _uiState.value = _uiState.value.copy(cancelError = null)
+    }
+
+    fun hideReservation(id: Long, email: String) {
+        if (_uiState.value.hidingReservationId != null) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(hidingReservationId = id, hideError = null) }
+            try {
+                repository.ocultarParaUsuario(id, email.trim())
+                _reservations.value = _reservations.value.filterNot { it.id == id }
+                _uiState.update { it.copy(hidingReservationId = null) }
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (_: Exception) {
+                _uiState.update {
+                    it.copy(
+                        hidingReservationId = null,
+                        hideError = "No pudimos quitar la reserva de tu lista. Inténtalo de nuevo."
+                    )
+                }
+            }
+        }
+    }
+
+    fun clearHideError() {
+        _uiState.update { it.copy(hideError = null) }
     }
 
     fun clearCancellationCompleted() {

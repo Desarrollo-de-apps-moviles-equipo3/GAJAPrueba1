@@ -75,6 +75,9 @@ fun MyReservationsScreen(
     var reservationToCancel by remember {
         mutableStateOf<ReservationResponse?>(null)
     }
+    var reservationToHide by remember {
+        mutableStateOf<ReservationResponse?>(null)
+    }
     var reservationDetail by remember {
         mutableStateOf<ReservationResponse?>(null) }
 
@@ -249,6 +252,17 @@ fun MyReservationsScreen(
             }
         }
 
+        state.hideError?.let { message ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(message, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.error)
+                TextButton(onClick = viewModel::clearHideError) { Text("Cerrar") }
+            }
+        }
+
         if (state.error != null && reservations.isNotEmpty()) {
             Row(
                 modifier = Modifier
@@ -340,6 +354,9 @@ fun MyReservationsScreen(
                             reservation = reservation,
                             isPast = selectedTab == ReservationTab.PASADAS,
                             onCancelClick = { reservationToCancel = reservation },
+                            canHide = canHideReservation(reservation),
+                            isHiding = state.hidingReservationId == reservation.id,
+                            onHideClick = { reservationToHide = reservation },
                             onClick = { reservationDetail = reservation }
                         )
                     }
@@ -369,6 +386,28 @@ fun MyReservationsScreen(
                 TextButton(onClick = { reservationToCancel = null }) {
                     Text("Volver")
                 }
+            }
+        )
+    }
+
+    reservationToHide?.let { reservation ->
+        AlertDialog(
+            onDismissRequest = { reservationToHide = null },
+            title = { Text("Quitar de Mis reservas") },
+            text = {
+                Text("Se ocultará de tu lista, pero el administrador conservará el registro. ¿Continuar?")
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = state.hidingReservationId == null,
+                    onClick = {
+                        viewModel.hideReservation(reservation.id, email)
+                        reservationToHide = null
+                    }
+                ) { Text("Quitar de mi lista") }
+            },
+            dismissButton = {
+                TextButton(onClick = { reservationToHide = null }) { Text("Volver") }
             }
         )
     }
@@ -410,7 +449,10 @@ fun MyReservationsScreen(
 private fun ReservationCard(
     reservation: ReservationResponse,
     isPast: Boolean,
+    canHide: Boolean,
+    isHiding: Boolean,
     onCancelClick: () -> Unit,
+    onHideClick: () -> Unit,
     onClick: () -> Unit
 ) {
     Card(
@@ -509,15 +551,39 @@ private fun ReservationCard(
                             reservation.estado.equals("APROBADA", ignoreCase = true)
                     )
 
-            if (canCancel) {
-                TextButton(
-                    onClick = onCancelClick,
-                    modifier = Modifier.align(Alignment.End)
+            if (canCancel || canHide) {
+                Row(
+                    modifier = Modifier.align(Alignment.End),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text("Cancelar", color = EspaciosPalette.Orange)
+                    if (canHide) {
+                        TextButton(onClick = onHideClick, enabled = !isHiding) {
+                            Text(if (isHiding) "Quitando…" else "Quitar de mi lista", color = EspaciosPalette.Slate)
+                        }
+                    }
+                    if (canCancel) {
+                        TextButton(onClick = onCancelClick) {
+                            Text("Cancelar", color = EspaciosPalette.Orange)
+                        }
+                    }
                 }
             }
         }
+    }
+}
+
+private fun canHideReservation(
+    reservation: ReservationResponse,
+    nowMillis: Long = System.currentTimeMillis()
+): Boolean {
+    return when (reservation.estado.uppercase(Locale.ROOT)) {
+        "CANCELADA", "RECHAZADA" -> true
+        "APROBADA" -> {
+            val endText = reservation.horario.split("-").getOrNull(1)?.trim() ?: return false
+            val endMillis = parseReservationTime(reservation.fecha, endText) ?: return false
+            nowMillis >= endMillis
+        }
+        else -> false
     }
 }
 

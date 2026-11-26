@@ -17,11 +17,27 @@ data class AdminReservation(
     val slot: String,
     val reason: String,
     val status: EstadoReserva,
-    val rejectionReason: String? = null
+    val rejectionReason: String? = null,
+    val createdAt: String? = null,
+    val hiddenForUser: Boolean = false
+)
+
+data class ReservationRules(
+    val maxDaysAhead: Int,
+    val cancellationLimitHours: Int,
+    val openingHour: Int = 8,
+    val closingHour: Int = 23
 )
 
 interface AdminReservationsRepository {
     suspend fun getByStatus(status: EstadoReserva): List<AdminReservation>
+    suspend fun getRules(): ReservationRules = ReservationRules(7, 2)
+    suspend fun updateRules(rules: ReservationRules): ReservationRules = rules
+    suspend fun getAll(): List<AdminReservation> =
+        getByStatus(EstadoReserva.PENDIENTE) +
+                getByStatus(EstadoReserva.APROBADA) +
+                getByStatus(EstadoReserva.RECHAZADA) +
+                getByStatus(EstadoReserva.CANCELADA)
     suspend fun approve(id: Long): AdminReservation
     suspend fun reject(id: Long, reason: String): AdminReservation
 }
@@ -34,6 +50,32 @@ class RemoteAdminReservationsRepository(
         withContext(Dispatchers.IO) {
             api.listar(status.name).map { it.toModel() }
         }
+
+    override suspend fun getAll(): List<AdminReservation> = withContext(Dispatchers.IO) {
+        api.listar().map { it.toModel() }
+    }
+
+    override suspend fun getRules(): ReservationRules = withContext(Dispatchers.IO) {
+        api.obtenerReglas().let {
+            ReservationRules(
+                maxDaysAhead = it.maxDiasAdelante,
+                cancellationLimitHours = it.horasLimiteCancelacion,
+                openingHour = it.horaApertura,
+                closingHour = it.horaCierre
+            )
+        }
+    }
+
+    override suspend fun updateRules(rules: ReservationRules): ReservationRules = withContext(Dispatchers.IO) {
+        api.actualizarReglas(
+            com.example.gaja_prueba1.data.remote.ActualizarReglasReservaDto(
+                rules.maxDaysAhead, rules.cancellationLimitHours
+            )
+        ).let {
+            ReservationRules(it.maxDiasAdelante, it.horasLimiteCancelacion,
+                it.horaApertura, it.horaCierre)
+        }
+    }
 
     override suspend fun approve(id: Long): AdminReservation = withContext(Dispatchers.IO) {
         api.actualizarEstado(id, ActualizarEstadoDto(EstadoReserva.APROBADA.name)).toModel()
@@ -56,7 +98,9 @@ internal fun ReservaDto.toModel() = AdminReservation(
     slot = horario,
     reason = motivo,
     status = EstadoReserva.entries.firstOrNull { it.name == estado } ?: EstadoReserva.PENDIENTE,
-    rejectionReason = motivoRechazo
+    rejectionReason = motivoRechazo,
+    createdAt = creadaEn,
+    hiddenForUser = ocultaParaUsuario
 )
 
 /** Reglas del motivo de rechazo (el servicio lo guarda y el usuario lo verá). */

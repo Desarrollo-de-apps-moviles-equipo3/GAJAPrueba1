@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -83,6 +84,7 @@ fun ReservationFormScreen(
             if (!showDetails) {
                 DateStep(
                     selectedMillis = state.dateMillis,
+                    maxDaysAhead = state.rules.maxDaysAhead,
                     error = state.dateError,
                     onSelect = viewModel::onDateSelected,
                     onNext = { if (viewModel.validateDateSelection()) detailsStep = true }
@@ -90,7 +92,8 @@ fun ReservationFormScreen(
             } else {
                 DetailsStep(
                     state = state,
-                    onSlot = viewModel::onSlotSelected,
+                    onHour = viewModel::onTimeHourSelected,
+                    onResetHours = viewModel::onResetTimeSelection,
                     onReason = viewModel::onReasonChanged,
                     onSubmit = viewModel::submit
                 )
@@ -143,15 +146,16 @@ private fun localMidnightFromUtcDate(utcMillis: Long): Long {
 @OptIn(ExperimentalMaterial3Api::class)
 private fun DateStep(
     selectedMillis: Long?,
+    maxDaysAhead: Int,
     error: String?,
     onSelect: (Long) -> Unit,
     onNext: () -> Unit
 ) {
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
     val today = remember { ReservationValidator.startOfDay(System.currentTimeMillis()).timeInMillis }
-    val lastAllowed = remember(today) {
+    val lastAllowed = remember(today, maxDaysAhead) {
         (ReservationValidator.startOfDay(today).clone() as Calendar).apply {
-            add(Calendar.DAY_OF_YEAR, ReservationValidator.MAX_DAYS_AHEAD)
+            add(Calendar.DAY_OF_YEAR, maxDaysAhead)
         }.timeInMillis
     }
     val selected = selectedMillis
@@ -183,7 +187,7 @@ private fun DateStep(
             Text("Cambiar", color = EspaciosPalette.Steel, fontSize = 12.sp)
         }
         Text(
-            "Puedes reservar desde hoy hasta ${ReservationValidator.MAX_DAYS_AHEAD} días adelante.",
+            "Puedes reservar desde hoy hasta $maxDaysAhead días adelante.",
             modifier = Modifier.padding(horizontal = 22.dp, vertical = 10.dp),
             color = EspaciosPalette.Slate,
             fontSize = 12.sp
@@ -221,40 +225,101 @@ private fun DateStep(
 @Composable
 private fun DetailsStep(
     state: com.example.gaja_prueba1.ui.viewmodels.ReservationUiState,
-    onSlot: (String) -> Unit,
+    onHour: (Int) -> Unit,
+    onResetHours: () -> Unit,
     onReason: (String) -> Unit,
     onSubmit: () -> Unit
 ) {
     Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
         Text("Horario disponible", color = EspaciosPalette.Navy, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 16.dp))
-        Text("Selecciona un bloque de 2 horas", color = EspaciosPalette.Slate, fontSize = 12.sp)
+        Text("Atención de ${"%02d:00".format(state.rules.openingHour)} a ${"%02d:00".format(state.rules.closingHour)}", color = EspaciosPalette.Slate, fontSize = 12.sp)
         if (state.isLoadingSlots) {
             Text("Cargando horarios…", color = EspaciosPalette.Slate, fontSize = 12.sp)
         }
         state.slotsError?.let { ErrorLine(it) }
         Spacer(Modifier.height(10.dp))
-        Text("Los horarios en gris ya están ocupados.", color = EspaciosPalette.Slate, fontSize = 11.sp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text("Elige el rango horario", color = EspaciosPalette.Navy, fontWeight = FontWeight.Medium, fontSize = 13.sp)
+                if (state.selectedEndHour == null) {
+                    Text(
+                        if (state.selectedStartHour == null) "Toca la hora inicial y luego la final."
+                        else "Desde las %02d:00 · elige la hora final.".format(state.selectedStartHour),
+                        color = EspaciosPalette.Slate,
+                        fontSize = 11.sp
+                    )
+                }
+            }
+            if (state.selectedStartHour != null) {
+                FilledTonalButton(
+                    onClick = onResetHours,
+                    modifier = Modifier.height(36.dp),
+                    shape = RoundedCornerShape(50),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = EspaciosPalette.SkyCard,
+                        contentColor = EspaciosPalette.Navy
+                    )
+                ) {
+                    Icon(Icons.Filled.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(5.dp))
+                    Text("Restablecer", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
         Spacer(Modifier.height(8.dp))
-        ReservationValidator.SLOTS.chunked(3).forEach { rowSlots ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-                rowSlots.forEach { slot ->
-                    val selected = state.selectedSlot == slot
-                    val unavailable = slot in state.unavailableSlots
+        (ReservationValidator.startHours(state.rules.openingHour, state.rules.closingHour) + state.rules.closingHour)
+            .chunked(4).forEach { rowHours ->
+            Row(horizontalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 7.dp)) {
+                rowHours.forEach { hour ->
+                    val startHour = state.selectedStartHour
+                    val endHour = state.selectedEndHour
+                    val isEndpoint = hour == startHour || hour == endHour
+                    val isInsideRange = startHour != null && endHour != null && hour in (startHour + 1) until endHour
+                    val enabled = when {
+                        state.isLoadingSlots || state.slotsError != null -> false
+                        startHour == null -> hour < state.rules.closingHour && maxAvailableDurationForUi(state, hour) > 0
+                        endHour != null && hour <= startHour ->
+                            hour < state.rules.closingHour && maxAvailableDurationForUi(state, hour) > 0
+                        hour <= startHour -> hour < state.rules.closingHour && maxAvailableDurationForUi(state, hour) > 0
+                        else -> hour - startHour <= maxAvailableDurationForUi(state, startHour)
+                    }
                     OutlinedButton(
-                        onClick = { onSlot(slot) },
-                        enabled = !unavailable && !state.isLoadingSlots && state.slotsError == null,
-                        modifier = Modifier.weight(1f).height(48.dp),
+                        onClick = { onHour(hour) },
+                        enabled = enabled,
+                        modifier = Modifier.weight(1f).height(42.dp),
+                        shape = CircleShape,
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            when {
+                                isEndpoint -> EspaciosPalette.Navy
+                                isInsideRange -> EspaciosPalette.Steel
+                                enabled -> EspaciosPalette.Beige
+                                else -> EspaciosPalette.Beige
+                            }
+                        ),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = if (selected) EspaciosPalette.Navy else EspaciosPalette.White,
-                            contentColor = if (selected) EspaciosPalette.White else EspaciosPalette.Navy,
-                            disabledContainerColor = EspaciosPalette.Beige,
+                            containerColor = when {
+                                isEndpoint -> EspaciosPalette.Navy
+                                isInsideRange -> EspaciosPalette.SkyCard
+                                else -> EspaciosPalette.White
+                            },
+                            contentColor = if (isEndpoint) EspaciosPalette.White else EspaciosPalette.Navy,
+                            disabledContainerColor = EspaciosPalette.Beige.copy(alpha = 0.65f),
                             disabledContentColor = EspaciosPalette.Slate
                         )
                     ) {
-                        Text(slot, fontSize = 10.sp, maxLines = 1)
+                        Text("%02d:00".format(hour), fontSize = 11.sp, fontWeight = if (isEndpoint) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1)
                     }
                 }
             }
+        }
+        state.selectedSlot?.let { slot ->
+            Text("Horario elegido: $slot", color = EspaciosPalette.Slate, fontSize = 11.sp)
         }
         if (state.slotError != null) ErrorLine(state.slotError)
         Spacer(Modifier.height(12.dp))
@@ -291,6 +356,25 @@ private fun DetailsStep(
             else Text("Confirmar reserva")
         }
     }
+}
+
+private fun maxAvailableDurationForUi(
+    state: com.example.gaja_prueba1.ui.viewmodels.ReservationUiState,
+    startHour: Int
+): Int {
+    val selectedDate = state.dateMillis ?: return 0
+    val now = Calendar.getInstance()
+    val reservationDay = Calendar.getInstance().apply { timeInMillis = selectedDate }
+    val today = Calendar.getInstance()
+    val isToday = reservationDay.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+            reservationDay.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
+    if (isToday && startHour <= now.get(Calendar.HOUR_OF_DAY)) return 0
+    val closingRemaining = state.rules.closingHour - startHour
+    val upperBound = closingRemaining
+    return (1..upperBound).takeWhile { duration ->
+        val candidate = ReservationValidator.formatHourSlot(startHour, duration)
+        state.unavailableSlots.none { ReservationValidator.overlaps(candidate, it) }
+    }.lastOrNull() ?: 0
 }
 
 @Composable

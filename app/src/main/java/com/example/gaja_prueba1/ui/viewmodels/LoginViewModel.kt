@@ -24,22 +24,11 @@ class LoginViewModel(
         AppDatabase.get(application).sessionDao()
     )
 
-    private val roles = listOf(
-        "Cadete",
-        "Oficial",
-        "Oficial de semana",
-        "Institución externa",
-        "Administrador"
-    )
-
     private val _email = MutableStateFlow("")
     val email: StateFlow<String> = _email.asStateFlow()
 
     private val _password = MutableStateFlow("")
     val password: StateFlow<String> = _password.asStateFlow()
-
-    private val _selectedRole = MutableStateFlow(0)
-    val selectedRole: StateFlow<Int> = _selectedRole.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -71,13 +60,6 @@ class LoginViewModel(
         _loginMessage.value = ""
     }
 
-    fun onRoleChange(index: Int) {
-        if (index in roles.indices) {
-            _selectedRole.value = index
-            _loginMessage.value = ""
-        }
-    }
-
     fun onLoginClick() {
         if (_isLoading.value) return
 
@@ -104,13 +86,10 @@ class LoginViewModel(
             _loginMessage.value = ""
 
             try {
-                val role = roles[_selectedRole.value]
-
                 when (
                     val result = authRepository.loginUser(
                         emailValue,
-                        passwordValue,
-                        role
+                        passwordValue
                     )
                 ) {
                     is LoginResult.Success -> {
@@ -148,7 +127,6 @@ class LoginViewModel(
     fun consumeLoginSuccess() {
         _email.value = ""
         _password.value = ""
-        _selectedRole.value = 0
         _loginMessage.value = ""
         _loggedUser.value = null
     }

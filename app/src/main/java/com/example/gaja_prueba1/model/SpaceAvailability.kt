@@ -24,26 +24,37 @@ object SpaceAvailability {
         slot: String,
         todayIso: String,
         blocks: List<BloqueoDto>,
-        reservations: List<Booking>
+        reservations: List<Booking>,
+        nowMillis: Long = System.currentTimeMillis()
     ): SlotStatus = when {
         isoDate < todayIso -> SlotStatus.Pasado
+        isoDate == todayIso && slot.substringBefore(":").toIntOrNull()?.let { startHour ->
+            startHour <= Calendar.getInstance().apply { timeInMillis = nowMillis }.get(Calendar.HOUR_OF_DAY)
+        } == true -> SlotStatus.Pasado
         blockFor(space, isoDate, slot, blocks) != null -> SlotStatus.Bloqueado
-        reservations.any { it.space == space.name && it.date == isoDate && it.timeSlot.trim() == slot } ->
+        reservations.any {
+            it.space == space.name && it.date == isoDate &&
+                    ReservationValidator.overlaps(it.timeSlot.trim(), slot)
+        } ->
             SlotStatus.Reservado
         else -> SlotStatus.Libre
     }
 
     fun blockFor(space: Space, isoDate: String, slot: String, blocks: List<BloqueoDto>): BloqueoDto? =
-        blocks.firstOrNull { it.spaceId == space.id && it.date == isoDate && it.timeSlot.trim() == slot }
+        blocks.firstOrNull {
+            it.spaceId == space.id && it.date == isoDate &&
+                    ReservationValidator.overlaps(it.timeSlot.trim(), slot)
+        }
 
     fun daySlots(
         space: Space,
         isoDate: String,
         todayIso: String,
         blocks: List<BloqueoDto>,
-        reservations: List<Booking>
+        reservations: List<Booking>,
+        nowMillis: Long = System.currentTimeMillis()
     ): List<Pair<String, SlotStatus>> = ReservationValidator.SLOTS.map { slot ->
-        slot to slotStatus(space, isoDate, slot, todayIso, blocks, reservations)
+        slot to slotStatus(space, isoDate, slot, todayIso, blocks, reservations, nowMillis)
     }
 
     fun freeCount(
@@ -51,8 +62,9 @@ object SpaceAvailability {
         isoDate: String,
         todayIso: String,
         blocks: List<BloqueoDto>,
-        reservations: List<Booking>
-    ): Int = daySlots(space, isoDate, todayIso, blocks, reservations).count { it.second == SlotStatus.Libre }
+        reservations: List<Booking>,
+        nowMillis: Long = System.currentTimeMillis()
+    ): Int = daySlots(space, isoDate, todayIso, blocks, reservations, nowMillis).count { it.second == SlotStatus.Libre }
 
     /** Los 7 días (lunes a domingo) de la semana de [nowMillis], desplazada [weekOffset] semanas. */
     fun weekDays(nowMillis: Long, weekOffset: Int): List<String> {

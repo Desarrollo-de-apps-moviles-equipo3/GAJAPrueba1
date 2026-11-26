@@ -13,7 +13,7 @@ import java.io.IOException
 
 /**
  * Inicio de sesión contra el microservicio de usuarios (puerto 8081).
- * El servicio revisa correo, contraseña y rol, y también el estado del perfil:
+ * El servicio revisa correo y contraseña, devuelve el rol de la cuenta y también verifica el estado del perfil:
  * uno pendiente, rechazado o desactivado no entra y el servicio explica por qué.
  */
 class AuthRepository(
@@ -22,23 +22,13 @@ class AuthRepository(
 
     suspend fun loginUser(
         email: String,
-        password: String,
-        selectedRole: String
+        password: String
     ): LoginResult = withContext(Dispatchers.IO) {
 
         try {
             val normalizedEmail = email.trim().lowercase()
 
-            // Se conserva la cuenta del profesor: funciona con cualquier rol y sin el servicio.
-            if (normalizedEmail == "profe_exe@duoc.cl" && password == "12345") {
-                return@withContext LoginResult.Success(
-                    token = "demo-token-profesor",
-                    userId = normalizedEmail,
-                    role = selectedRole
-                )
-            }
-
-            val response = api.login(LoginRequestDto(normalizedEmail, password, selectedRole))
+            val response = api.login(LoginRequestDto(normalizedEmail, password))
             LoginResult.Success(
                 token = response.token,
                 userId = response.email,

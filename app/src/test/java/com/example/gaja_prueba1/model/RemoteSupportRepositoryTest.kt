@@ -43,6 +43,15 @@ class RemoteSupportRepositoryTest {
             lastEmailQuery = email
             return items.filter { it.usuarioEmail == email }
         }
+
+        override suspend fun listarTodas(): List<IncidenciaDto> = items.toList()
+
+        override suspend fun resolver(id: Long): IncidenciaDto {
+            val index = items.indexOfFirst { it.id == id }
+            val updated = items[index].copy(estado = "RESUELTA")
+            items[index] = updated
+            return updated
+        }
     }
 
     @Test

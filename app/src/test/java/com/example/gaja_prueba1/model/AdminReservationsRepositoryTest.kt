@@ -1,8 +1,10 @@
 package com.example.gaja_prueba1.model
 
 import com.example.gaja_prueba1.data.remote.ActualizarEstadoDto
+import com.example.gaja_prueba1.data.remote.ActualizarReglasReservaDto
 import com.example.gaja_prueba1.data.remote.ReservaDto
 import com.example.gaja_prueba1.data.remote.AdminReservasApi
+import com.example.gaja_prueba1.data.remote.ReglasReservaDto
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -36,6 +38,11 @@ class AdminReservationsRepositoryTest {
             data[data.indexOfFirst { it.id == id }] = updated
             return updated
         }
+
+        override suspend fun obtenerReglas() = ReglasReservaDto(7, 2, 8, 23)
+
+        override suspend fun actualizarReglas(body: ActualizarReglasReservaDto) =
+            ReglasReservaDto(body.maxDiasAdelante, body.horasLimiteCancelacion, 8, 23)
     }
 
     @Test

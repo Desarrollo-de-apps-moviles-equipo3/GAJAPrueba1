@@ -27,7 +27,7 @@ data class SupportUiState(
     val errorMessage: String? = null,
     val requests: List<SupportRequest> = emptyList(),
     val form: NewRequestForm = NewRequestForm(),
-    /** Se enciende cuando la solicitud se envió, para que la pantalla vuelva a "Ayuda y soporte". */
+    /** Se enciende cuando la solicitud se envió, para abrir el seguimiento. */
     val sent: Boolean = false,
     val message: String? = null
 )
@@ -98,11 +98,10 @@ class SupportViewModel(
         updateForm { it.copy(isSaving = true) }
         viewModelScope.launch {
             try {
-                repository.create(email, form.category, form.description)
-                val requests = repository.mine(email)
+                val request = repository.create(email, form.category, form.description)
                 _uiState.update {
                     it.copy(
-                        requests = requests,
+                        requests = listOf(request) + it.requests.filterNot { prior -> prior.id == request.id },
                         form = NewRequestForm(),
                         sent = true,
                         message = "Solicitud enviada"

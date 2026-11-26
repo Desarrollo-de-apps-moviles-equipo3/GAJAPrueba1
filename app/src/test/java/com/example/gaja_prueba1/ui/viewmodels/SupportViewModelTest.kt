@@ -103,6 +103,23 @@ class SupportViewModelTest {
     }
 
     @Test
+    fun enviarMuestraLaSolicitudAunqueElListadoEsteCaido() {
+        val repo = FakeSupportRepository(failing = true)
+        val vm = SupportViewModel(repo)
+        vm.onNewRequest()
+        vm.onCategoryChange("Otro")
+        vm.onDescriptionChange("Necesito ayuda con mi cuenta")
+
+        vm.onSend("cadete@gaja.cl")
+
+        val state = vm.uiState.value
+        assertTrue(state.sent)
+        assertEquals("Solicitud enviada", state.message)
+        assertEquals("Necesito ayuda con mi cuenta", state.requests.single().description)
+        assertEquals(1, repo.createCalls)
+    }
+
+    @Test
     fun laDescripcionSeCortaEn1000Caracteres() {
         val vm = SupportViewModel(FakeSupportRepository())
         vm.onNewRequest()

@@ -126,6 +126,24 @@ class AdminProfilesViewModelTest {
     }
 
     @Test
+    fun elRechazoApareceEnSuPestanaAunqueElListadoEsteCaido() {
+        val repository = repo()
+        val vm = AdminProfilesViewModel(repository)
+        val profile = vm.uiState.value.visible.first()
+        vm.onRejectRequested(profile)
+        vm.onRejectReasonChange("Falta acreditar la identidad")
+        repository.failing = true
+
+        vm.onRejectConfirmed()
+        vm.onFilterChange(ProfileFilter.Rechazados)
+
+        val rejected = vm.uiState.value.visible.single()
+        assertEquals(profile.id, rejected.id)
+        assertEquals("Falta acreditar la identidad", rejected.motivoRechazo)
+        assertEquals("Perfil rechazado", vm.uiState.value.message)
+    }
+
+    @Test
     fun cambiarDePestanaFiltraLaLista() {
         val vm = AdminProfilesViewModel(repo())
         vm.onFilterChange(ProfileFilter.Aprobados)

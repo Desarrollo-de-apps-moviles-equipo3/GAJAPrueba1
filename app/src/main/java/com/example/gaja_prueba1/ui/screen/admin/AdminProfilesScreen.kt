@@ -46,6 +46,7 @@ import com.example.gaja_prueba1.ui.viewmodels.AdminProfilesViewModel
 import com.example.gaja_prueba1.ui.viewmodels.ProfileFilter
 import com.example.gaja_prueba1.ui.viewmodels.USER_ROLES
 import com.example.gaja_prueba1.ui.viewmodels.UserFormState
+import com.example.gaja_prueba1.validation.UserValidator
 
 class AdminProfilesActions(
     val onFilterChange: (ProfileFilter) -> Unit,
@@ -208,7 +209,6 @@ private fun ProfileList(state: AdminProfilesUiState, actions: AdminProfilesActio
         }
         item { GajaButton(text = "Crear usuario", onClick = actions.onNewUser) }
         item {
-            // Con scroll horizontal para que la tercera pestaña no se corte en pantallas angostas.
             Row(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -290,6 +290,9 @@ private fun ProfileDetail(user: Usuario, actions: AdminProfilesActions) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         TextButton(onClick = actions.onCloseDetail) { Text("‹ Volver") }
+        if (user.rol == UserValidator.EXTERNAL_ROLE) {
+            Text("Detalle de institución externa", style = MaterialTheme.typography.titleMedium)
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -312,7 +315,9 @@ private fun ProfileDetail(user: Usuario, actions: AdminProfilesActions) {
                 DetailRow("Rol", user.rol)
                 DetailRow("Correo", user.email)
                 DetailRow("Teléfono", user.telefono.ifBlank { "No informado" })
-                if (user.institucion.isNotBlank()) DetailRow("Institución", user.institucion)
+                if (user.rol == UserValidator.EXTERNAL_ROLE || user.institucion.isNotBlank()) {
+                    DetailRow("Institución", user.institucion.ifBlank { "No informada" })
+                }
                 DetailRow("Fecha de registro", user.fechaAlta.ifBlank { "—" })
                 if (user.estado == EstadoPerfil.Rechazado) {
                     DetailRow("Motivo del rechazo", user.motivoRechazo ?: "Sin motivo")

@@ -20,11 +20,11 @@ val USER_ROLES = listOf("Cadete", "Oficial", "Oficial de semana", "Institución 
 
 /**
  * Pestañas de la lista de perfiles. Cada una muestra los usuarios de un estado.
- * Para sumar otra (por ejemplo "Rechazados") basta con agregar una línea aquí.
  */
 enum class ProfileFilter(val label: String, val estado: EstadoPerfil) {
     Pendientes("Pendientes", EstadoPerfil.Pendiente),
     Aprobados("Aprobados", EstadoPerfil.Aprobado),
+    Rechazados("Rechazados", EstadoPerfil.Rechazado),
     Desactivados("Desactivados", EstadoPerfil.Desactivado)
 }
 
@@ -159,10 +159,14 @@ class AdminProfilesViewModel(
         _uiState.update { it.copy(reject = reject.copy(isSaving = true)) }
         viewModelScope.launch {
             try {
-                repository.reject(reject.user.id, reject.reason)
-                val users = repository.getAll()
+                val rejected = repository.reject(reject.user.id, reject.reason)
                 _uiState.update {
-                    it.copy(users = users, reject = null, selectedId = null, message = "Perfil rechazado")
+                    it.copy(
+                        users = it.users.map { user -> if (user.id == rejected.id) rejected else user },
+                        reject = null,
+                        selectedId = null,
+                        message = "Perfil rechazado"
+                    )
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -196,10 +200,14 @@ class AdminProfilesViewModel(
     private fun changeState(user: Usuario, done: String, failed: String, action: suspend () -> Usuario) {
         viewModelScope.launch {
             try {
-                action()
-                val users = repository.getAll()
-                // Volvemos a la lista: el perfil cambió de pestaña y el detalle viejo ya no corresponde.
-                _uiState.update { it.copy(users = users, selectedId = null, message = done) }
+                val updated = action()
+                _uiState.update {
+                    it.copy(
+                        users = it.users.map { profile -> if (profile.id == updated.id) updated else profile },
+                        selectedId = null,
+                        message = done
+                    )
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -250,7 +258,7 @@ class AdminProfilesViewModel(
         updateForm { it.copy(isSaving = true) }
         viewModelScope.launch {
             try {
-                repository.create(
+                val created = repository.create(
                     nombre = form.nombre,
                     email = form.email,
                     password = form.password,
@@ -258,10 +266,10 @@ class AdminProfilesViewModel(
                     telefono = form.telefono,
                     institucion = form.institucion
                 )
-                val users = repository.getAll()
                 _uiState.update {
                     it.copy(
-                        users = users,
+                        users = (it.users.filterNot { user -> user.id == created.id } + created)
+                            .sortedBy { user -> user.nombre },
                         form = null,
                         // El usuario creado por el admin nace aprobado: lo mostramos en esa pestaña.
                         filter = ProfileFilter.Aprobados,

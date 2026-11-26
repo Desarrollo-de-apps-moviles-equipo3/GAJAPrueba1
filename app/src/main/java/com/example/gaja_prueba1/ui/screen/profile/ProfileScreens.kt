@@ -311,14 +311,13 @@ private val faqs = listOf(
 
 class HelpActions(
     val onBack: () -> Unit,
-    val onRetry: () -> Unit,
-    val onMessageShown: () -> Unit,
-    val onNewRequest: () -> Unit
+    val onNewRequest: () -> Unit,
+    val onTracking: () -> Unit
 )
 
 @Composable
-fun HelpScreen(state: SupportUiState, actions: HelpActions) {
-    ProfileScaffold("Ayuda y soporte", actions.onBack, state.message, actions.onMessageShown) {
+fun HelpScreen(actions: HelpActions) {
+    ProfileScaffold("Ayuda y soporte", actions.onBack, null, {}) {
         Text(
             "Preguntas frecuentes",
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
@@ -327,12 +326,18 @@ fun HelpScreen(state: SupportUiState, actions: HelpActions) {
         faqs.forEach { (question, answer) -> FaqItem(question, answer) }
 
         GajaButton(text = "Nueva solicitud", onClick = actions.onNewRequest)
+        TextButton(onClick = actions.onTracking) { Text("Seguimiento de solicitudes") }
+    }
+}
 
-        Text(
-            "Mis solicitudes",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = EspaciosPalette.Navy
-        )
+@Composable
+fun RequestTrackingScreen(
+    state: SupportUiState,
+    onBack: () -> Unit,
+    onRetry: () -> Unit,
+    onMessageShown: () -> Unit
+) {
+    ProfileScaffold("Seguimiento de solicitudes", onBack, state.message, onMessageShown) {
         when {
             state.isLoading -> Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
@@ -340,7 +345,7 @@ fun HelpScreen(state: SupportUiState, actions: HelpActions) {
 
             state.errorMessage != null -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(state.errorMessage, color = MaterialTheme.colorScheme.error)
-                TextButton(onClick = actions.onRetry) { Text("Reintentar") }
+                TextButton(onClick = onRetry) { Text("Reintentar") }
             }
 
             state.requests.isEmpty() -> Text(

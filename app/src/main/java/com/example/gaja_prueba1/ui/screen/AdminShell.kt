@@ -146,6 +146,12 @@ fun AdminShell(
                 menuDestination == "Soporte y contacto" ->
                     AdminSupportScreen(modifier = content)
 
+                menuDestination == "Registro de sesiones" ->
+                    AdminSessionHistoryScreen(onBack = { menuDestination = null }, modifier = content)
+
+                menuDestination == "Notificaciones" ->
+                    AdminNotificationsScreen(onBack = { menuDestination = null }, modifier = content)
+
                 menuDestination != null ->
                     AdminPlaceholder(userName, menuDestination.orEmpty(), content)
 

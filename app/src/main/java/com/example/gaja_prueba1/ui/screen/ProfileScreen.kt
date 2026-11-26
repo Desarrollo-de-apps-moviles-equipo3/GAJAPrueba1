@@ -51,7 +51,8 @@ fun ProfileScreen(
     onChangePassword: () -> Unit,
     onLogout: () -> Unit,
     onNotifications: () -> Unit = {},
-    onHelp: () -> Unit = {}
+    onHelp: () -> Unit = {},
+    role: String = ""
 ) {
     val context = LocalContext.current
     val preferences = remember {
@@ -122,6 +123,9 @@ fun ProfileScreen(
             }
             Text(fullName, modifier = Modifier.padding(top = 10.dp), color = EspaciosPalette.Navy, fontWeight = FontWeight.SemiBold)
             Text(email, modifier = Modifier.padding(top = 3.dp), color = EspaciosPalette.Slate, fontSize = 12.sp)
+            if (role.isNotBlank()) {
+                Text(role, color = EspaciosPalette.Slate, fontSize = 12.sp)
+            }
         }
 
         Column(

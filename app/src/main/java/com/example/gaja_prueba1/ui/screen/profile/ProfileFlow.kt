@@ -14,7 +14,7 @@ import com.example.gaja_prueba1.ui.viewmodels.MyProfileViewModel
 import com.example.gaja_prueba1.ui.viewmodels.SupportViewModel
 
 /** Las pantallas a las que se llega desde la pestaña Perfil. */
-enum class ProfileDestination { Main, PersonalData, ChangePassword, Notifications, Help, NewRequest }
+enum class ProfileDestination { Main, PersonalData, ChangePassword, Notifications, Help, NewRequest, Tracking }
 
 /**
  * Pestaña Perfil completa: el menú y las pantallas que cuelgan de él.
@@ -27,25 +27,33 @@ fun ProfileFlow(
     onMyReservations: () -> Unit,
     onLogout: () -> Unit,
     profileViewModel: MyProfileViewModel = viewModel(),
-    supportViewModel: SupportViewModel = viewModel()
+    supportViewModel: SupportViewModel = viewModel(),
+    role: String = ""
 ) {
     var destination by rememberSaveable { mutableStateOf(ProfileDestination.Main) }
 
+    val backToMenu = {
+        profileViewModel.onDiscardPersonal()
+        profileViewModel.onClearPassword()
+        destination = ProfileDestination.Main
+    }
+    val backToHelp = { destination = ProfileDestination.Help }
     BackHandler(enabled = destination != ProfileDestination.Main) {
-        destination = when (destination) {
-            ProfileDestination.NewRequest -> ProfileDestination.Help
-            else -> ProfileDestination.Main
+        when (destination) {
+            ProfileDestination.NewRequest, ProfileDestination.Tracking -> backToHelp()
+            else -> backToMenu()
         }
     }
 
     // Cada vez que se abre una pantalla se pide lo último al servicio.
-    LaunchedEffect(destination) {
+    LaunchedEffect(destination, email) {
         when (destination) {
+            ProfileDestination.Main,
             ProfileDestination.PersonalData,
             ProfileDestination.ChangePassword,
             ProfileDestination.Notifications -> profileViewModel.load(email)
 
-            ProfileDestination.Help -> supportViewModel.load(email)
+            ProfileDestination.Tracking -> supportViewModel.load(email)
             else -> Unit
         }
     }
@@ -53,25 +61,21 @@ fun ProfileFlow(
     val profileState by profileViewModel.uiState.collectAsState()
     val supportState by supportViewModel.uiState.collectAsState()
 
-    // Al enviarse una solicitud, volvemos a "Ayuda y soporte" para ver el aviso y la nueva solicitud en la lista.
+    // Al enviarse una solicitud, abrimos el seguimiento.
     LaunchedEffect(supportState.sent) {
-        if (supportState.sent) {
-            destination = ProfileDestination.Help
+        if (supportState.sent && destination == ProfileDestination.NewRequest) {
+            destination = ProfileDestination.Tracking
             supportViewModel.onSentHandled()
         }
     }
 
-    val backToMenu = {
-        profileViewModel.onDiscardPersonal()
-        profileViewModel.onClearPassword()
-        destination = ProfileDestination.Main
-    }
     val retryProfile = { profileViewModel.load(email) }
 
     when (destination) {
         ProfileDestination.Main -> ProfileScreen(
-            fullName = fullName,
+            fullName = profileState.user?.takeIf { it.email.equals(email, ignoreCase = true) }?.nombre ?: fullName,
             email = email,
+            role = role,
             onMyReservations = onMyReservations,
             onPersonalData = { destination = ProfileDestination.PersonalData },
             onChangePassword = { destination = ProfileDestination.ChangePassword },
@@ -118,11 +122,9 @@ fun ProfileFlow(
         )
 
         ProfileDestination.Help -> HelpScreen(
-            state = supportState,
             actions = HelpActions(
                 onBack = backToMenu,
-                onRetry = { supportViewModel.load(email) },
-                onMessageShown = supportViewModel::onMessageShown,
+                onTracking = { destination = ProfileDestination.Tracking },
                 onNewRequest = {
                     supportViewModel.onNewRequest()
                     destination = ProfileDestination.NewRequest
@@ -130,10 +132,17 @@ fun ProfileFlow(
             )
         )
 
+        ProfileDestination.Tracking -> RequestTrackingScreen(
+            state = supportState,
+            onBack = backToHelp,
+            onRetry = { supportViewModel.load(email) },
+            onMessageShown = supportViewModel::onMessageShown
+        )
+
         ProfileDestination.NewRequest -> NewRequestScreen(
             state = supportState,
             actions = NewRequestActions(
-                onBack = { destination = ProfileDestination.Help },
+                onBack = backToHelp,
                 onMessageShown = supportViewModel::onMessageShown,
                 onCategoryChange = supportViewModel::onCategoryChange,
                 onDescriptionChange = supportViewModel::onDescriptionChange,

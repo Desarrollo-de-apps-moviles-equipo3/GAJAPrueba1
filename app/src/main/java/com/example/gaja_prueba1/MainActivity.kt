@@ -185,6 +185,7 @@ class MainActivity : ComponentActivity() {
                                                 ProfileFlow(
                                                     fullName = userName,
                                                     email = session.email,
+                                                    role = session.role,
                                                     onMyReservations = onOpenReservations,
                                                     onLogout = onLogout
                                                 )

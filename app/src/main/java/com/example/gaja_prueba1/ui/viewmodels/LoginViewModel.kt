@@ -115,12 +115,12 @@ class LoginViewModel(
                 ) {
                     is LoginResult.Success -> {
                         sessionRepository.saveSession(
-                            emailValue,
+                            result.userId,
                             result.role
                         )
 
                         _loginMessage.value = "¡Bienvenido!"
-                        _loggedUser.value = emailValue
+                        _loggedUser.value = result.userId
                     }
 
                     is LoginResult.Error -> {
@@ -146,6 +146,10 @@ class LoginViewModel(
     }
 
     fun consumeLoginSuccess() {
+        _email.value = ""
+        _password.value = ""
+        _selectedRole.value = 0
+        _loginMessage.value = ""
         _loggedUser.value = null
     }
 }

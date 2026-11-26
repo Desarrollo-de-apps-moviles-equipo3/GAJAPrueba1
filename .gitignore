@@ -14,3 +14,7 @@
 .cxx
 local.properties
 keystore.properties
+
+# Llave de firma: nunca va al repositorio
+keystore/
+*.jks

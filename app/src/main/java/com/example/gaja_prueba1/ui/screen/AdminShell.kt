@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.example.gaja_prueba1.ui.screen.admin.*
 import com.example.gaja_prueba1.ui.theme.EspaciosPalette
+import com.example.gaja_prueba1.ui.theme.LightPalette
 import kotlinx.coroutines.launch
 
 /** Pestañas de la barra inferior del administrador (según el Figma). */
@@ -55,7 +56,7 @@ fun AdminShell(
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet(drawerContainerColor = EspaciosPalette.Navy) {
+            ModalDrawerSheet(drawerContainerColor = LightPalette.Navy) {
                 Column(Modifier.fillMaxSize().padding(16.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
                         Column(Modifier.weight(1f)) {
@@ -87,7 +88,7 @@ fun AdminShell(
                             },
                             colors = NavigationDrawerItemDefaults.colors(
                                 unselectedContainerColor = Color.Transparent,
-                                selectedContainerColor = EspaciosPalette.NavyTop,
+                                selectedContainerColor = LightPalette.NavyTop,
                                 unselectedTextColor = Color.White,
                                 selectedTextColor = Color.White,
                                 unselectedIconColor = Color.White,

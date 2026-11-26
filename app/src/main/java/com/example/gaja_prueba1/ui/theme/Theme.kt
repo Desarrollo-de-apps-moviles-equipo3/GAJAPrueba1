@@ -19,9 +19,11 @@ val MaterialTheme.extendedColors: ExtendedColors
 
 @Composable
 fun GAJAPrueba1Theme(
-    darkTheme: Boolean = false,
+    darkTheme: Boolean = ThemeSettings.isDark,
     content: @Composable () -> Unit
 ) {
+    // Las pantallas leen los colores de la marca desde EspaciosPalette: se avisa aquí en qué modo estamos.
+    EspaciosPalette.isDark = darkTheme
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     val extended = if (darkTheme) DarkExtendedColors else LightExtendedColors
 

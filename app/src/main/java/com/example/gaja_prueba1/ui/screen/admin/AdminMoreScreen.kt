@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -17,6 +18,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.gaja_prueba1.ui.components.GajaCard
+import com.example.gaja_prueba1.ui.theme.ThemeSettings
 
 data class AdminMenuEntry(val label: String, val icon: ImageVector)
 
@@ -85,6 +87,21 @@ fun AdminMoreScreen(
                     MenuRow(entry.label, entry.icon, MaterialTheme.colorScheme.onSurfaceVariant) { onSelect(entry.label) }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Icon(Icons.Filled.DarkMode, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "Modo oscuro",
+                        Modifier.weight(1f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Switch(checked = ThemeSettings.isDark, onCheckedChange = ThemeSettings::chooseDark)
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 MenuRow("Cerrar sesión", Icons.Filled.Logout, MaterialTheme.colorScheme.error, onLogout)
             }
         }

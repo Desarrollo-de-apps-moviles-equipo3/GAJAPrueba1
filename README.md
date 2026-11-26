@@ -14,94 +14,103 @@ https://trello.com/invite/b/6aa1ceeb2a571c1c37ebe421/ATTI0431bfec356275823e26300
 | Gabriel Alcalá | Formulario de reserva y reservas |
 | Almendra Vera | Base de datos, componentes reutilizables, íconos de error y pruebas |
 
-## Funcionalidades implementadas
+## Cómo está armado
+
+La app Android se conecta a tres microservicios Spring Boot (repositorio **GAJA-microservicios**), cada uno con su propio esquema en Supabase (PostgreSQL):
+
+| Servicio | Puerto | Qué hace |
+|---|---|---|
+| `usuarios-service` | 8081 | Perfiles, login, estados del perfil (pendiente, aprobado, rechazado, desactivado) y registro de sesiones |
+| `espacios-service` | 8082 | Espacios, categorías y bloqueos de agenda |
+| `reservas-service` | 8083 | Reservas, alertas, incidencias y reglas de reserva |
+
+En el teléfono solo se guarda la sesión (Room), la foto de perfil y el modo claro u oscuro.
+
+## Funcionalidades
 
 **Acceso**
-- Inicio de sesión con correo, contraseña (con botón para mostrar u ocultar) y selector de rol: Cadete, Oficial, Oficial de semana e Institución externa.
-- Validaciones por campo con mensaje e ícono de error, indicador de carga en el botón y mensajes de credenciales incorrectas.
-- Recuperar acceso, abierto desde "¿Olvidaste tu contraseña?", con su propia validación.
-- La sesión se guarda en Room: al cerrar y volver a abrir la app se entra directo al Inicio. Cerrar sesión la elimina.
+- Inicio de sesión con correo y contraseña. No se elige rol: cada cuenta entra con el rol que tiene registrado y una cuenta Administrador abre el panel de administración.
+- Un perfil pendiente, rechazado o desactivado no entra y el mensaje explica por qué.
+- Recuperar acceso, con validación. La sesión se guarda en Room y "Cerrar sesión" la elimina.
 
-**Inicio y espacios**
-- Saludo, contadores de reservas próximas y pasadas (leídos desde Room), buscador y carrusel de espacios.
-- "Cerca de mí": pide el permiso de ubicación en ejecución y ordena los espacios por distancia.
-- Listado completo de canchas desde la pestaña Reservas.
+**Cadete, Oficial, Oficial de semana e Institución externa**
+- Inicio con buscador, carrusel de espacios y "Cerca de mí" (permiso de ubicación).
+- Calendario por espacio con horas libres, reservadas, bloqueadas y pasadas.
+- Reserva con hora de inicio y de término (08:00 a 23:00, horas completas), validada en la app y en el servicio.
+- Mis reservas: cancelar con el plazo que fije el administrador y quitar de la lista las ya finalizadas.
+- Alertas por cada cambio en una reserva.
+- Perfil: foto, datos personales, cambiar contraseña, notificaciones, ayuda y soporte con seguimiento de la solicitud, y modo oscuro.
 
-**Reservas**
-- Formulario de reserva: espacio, fecha, horario de 2 horas y motivo, con validaciones y mensajes con ícono de error.
-- Reglas de negocio: máximo 3 reservas por día, hasta 7 días de anticipación, motivo de al menos 10 caracteres, no se permite una fecha pasada ni un horario ocupado.
-- Pantalla de solicitud enviada con animación.
-- Mis reservas: lista de las reservas guardadas, accesible desde Perfil.
+**Administrador**
+- Inicio con resumen, Agenda (bloqueos), Reservas (aprobar o rechazar con motivo) y Perfiles (aprobar, rechazar, desactivar, activar y crear usuarios).
+- Menú Más: Espacios y categorías, Alertas, Incidencias, Reportes, Soporte y contacto, Registro de sesiones, Notificaciones y Reglas de reserva (días de anticipación y plazo de cancelación; por defecto 7 días y 2 horas).
+- Modo oscuro desde el mismo menú.
 
-**Perfil**
-- Foto de perfil elegida desde la galería, guardada en el almacenamiento interno de la app.
+**Modo claro y oscuro**
+- Un interruptor en Perfil (usuarios) y en Más (administrador). Se aplica al instante y se recuerda al cerrar la app. Detalle en `docs/GExtra5_Modo_Oscuro.md`.
 
-**Recursos nativos del dispositivo**
-- Ubicación (permisos `ACCESS_COARSE_LOCATION` y `ACCESS_FINE_LOCATION`, con manejo de permiso concedido y negado).
-- Galería de fotos (selector de fotos del sistema).
-
-**Animaciones**
-- Transición entre el login y el Inicio, indicador de carga en los botones, mensajes de error animados, animaciones en el Inicio y en el cambio de pestañas, y animación de la pantalla de solicitud enviada.
-
-## Funcionalidades pendientes
-
-- Pestañas Calendario y Alertas (muestran "Próximamente").
-- Datos personales y Cambiar contraseña desde Perfil.
-- Servidor y base de datos remota; por ahora todo funciona localmente.
-- Panel de administrador, aprobación de solicitudes y notificaciones.
+**Recursos nativos**
+- Ubicación y galería de fotos.
 
 ## Tecnologías
 
 - Kotlin y Jetpack Compose con Material Design 3
-- Arquitectura MVVM con `StateFlow`
-- Room (con KSP) para la persistencia local
+- Arquitectura MVVM con `StateFlow`, repositorios con dependencias inyectadas
+- Retrofit, Gson y OkHttp para hablar con los microservicios
+- Room (con KSP) para la sesión
 - Android mínimo: API 24 (Android 7.0)
-- Solo librerías gratuitas y de código abierto
 
 ## Estructura del proyecto
 
 ```
 app/src/main/java/com/example/gaja_prueba1/
-├── data/          Base de datos Room (entidades, DAOs y AppDatabase)
-├── model/         Modelos y repositorios (sesión, reservas, espacios, autenticación)
-├── validation/    Validaciones de login y de reservas (lógica fuera de la interfaz)
+├── data/          Room y clientes Retrofit (data/remote)
+├── model/         Modelos y repositorios
+├── validation/    Validaciones (lógica fuera de la interfaz)
 ├── ui/
 │   ├── components/  Componentes reutilizables (GajaButton, GajaTextField, GajaChip, GajaCard, GajaSelector)
-│   ├── screen/      Pantallas
+│   ├── screen/      Pantallas (screen/admin para el administrador)
 │   ├── viewmodels/  ViewModels
-│   └── theme/       Colores, tipografía y tema
+│   └── theme/       Colores, paleta clara y oscura, tipografía y tema
 └── util/          Ubicación y almacenamiento de la foto de perfil
 ```
 
 ## Cómo ejecutar
 
-1. Clona el repositorio: `git clone https://github.com/Desarrollo-de-apps-moviles-equipo3/GAJAPrueba1.git`
-2. Ábrelo con Android Studio y espera a que Gradle termine de sincronizar.
-3. Selecciona un emulador o un celular con depuración USB activada.
-4. Presiona **Run**.
+1. Enciende los tres microservicios (ver el README de cada uno; necesitan las variables `SUPABASE_DB_URL`, `SUPABASE_DB_USER` y `SUPABASE_DB_PASSWORD`).
+2. En `data/remote/ApiClient.kt`, deja `HOST` con la dirección del computador que corre los servicios (`http://10.0.2.2` si usas el emulador de Android Studio).
+3. Abre el proyecto con Android Studio, espera a que Gradle sincronice y presiona **Run**.
 
 ### Usuarios de prueba
 
-La contraseña de todos es `12345`. El rol seleccionado en el login debe coincidir con el del usuario.
+La contraseña de todos es `12345`. Cada correo entra con su propio rol.
 
-| Correo | Rol |
+| Correo | Rol / estado |
 |---|---|
+| admin@gaja.cl | Administrador |
 | cadete@gaja.cl | Cadete |
 | oficial@gaja.cl | Oficial |
 | oficial.semana@gaja.cl | Oficial de semana |
 | externo@gaja.cl | Institución externa |
-| profe_exe@duoc.cl | Cualquier rol |
+| cadete.nuevo@gaja.cl, externo.nuevo@gaja.cl | Pendientes de aprobación |
+| cadete.rechazado@gaja.cl | Rechazado |
+| oficial.baja@gaja.cl | Desactivado |
 
 ## Pruebas
 
-- Unitarias (validaciones de login, recuperar acceso y reservas, filtro de espacios y cálculo de distancia):
+- App (ViewModels, repositorios, validaciones y paleta de colores):
   ```
   ./gradlew test
   ```
-- Instrumentadas de componentes Compose (requieren un emulador o celular conectado):
+- Microservicios, desde la carpeta de cada servicio:
   ```
-  ./gradlew connectedAndroidTest
+  mvn test
   ```
+- Las pantallas se prueban a mano en el emulador, usando una cuenta por rol.
+
+## Documentación
+
+La carpeta `docs/` tiene una guía por cada entrega: incidencias y alertas, reportes y reglas, pruebas unitarias, historial de reservas, login y horarios flexibles, y modo oscuro.
 
 ## Metodología de trabajo
 

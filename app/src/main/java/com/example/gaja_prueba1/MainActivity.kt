@@ -3,6 +3,7 @@ package com.example.gaja_prueba1
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
@@ -16,6 +17,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +38,8 @@ import com.example.gaja_prueba1.ui.screen.MyReservationsScreen
 import com.example.gaja_prueba1.ui.screen.AlertasScreen
 import com.example.gaja_prueba1.ui.screen.ProfileScreen
 import com.example.gaja_prueba1.ui.theme.GAJAPrueba1Theme
+import com.example.gaja_prueba1.ui.theme.SharedPrefsThemeStorage
+import com.example.gaja_prueba1.ui.theme.ThemeSettings
 import kotlinx.coroutines.launch
 import com.example.gaja_prueba1.ui.screen.RecoverAccessScreen
 import com.example.gaja_prueba1.ui.screen.AdminShell
@@ -55,8 +59,24 @@ class MainActivity : ComponentActivity() {
             AppDatabase.get(applicationContext).sessionDao()
         )
 
+        // El modo claro/oscuro se lee antes de dibujar para que la app no parpadee al abrir.
+        ThemeSettings.init(SharedPrefsThemeStorage(applicationContext))
+
         setContent {
-            GAJAPrueba1Theme {
+            val dark = ThemeSettings.isDark
+
+            // Los íconos de la barra de estado y de navegación se ajustan al modo elegido.
+            DisposableEffect(dark) {
+                val bars = if (dark) {
+                    SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+                } else {
+                    SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
+                }
+                enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
+                onDispose { }
+            }
+
+            GAJAPrueba1Theme(darkTheme = dark) {
 
                 var activeSession by remember {
                     mutableStateOf<SessionEntity?>(null)

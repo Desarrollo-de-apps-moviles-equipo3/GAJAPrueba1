@@ -9,54 +9,54 @@ import androidx.compose.ui.graphics.Color
 
 // ---------- Claro (marca: azul marino, acero, naranja, crema) ----------
 internal val LightColorScheme: ColorScheme = lightColorScheme(
-    primary = EspaciosPalette.Navy,
+    primary = LightPalette.Navy,
     onPrimary = Color.White,
-    primaryContainer = EspaciosPalette.SkyCard,
-    onPrimaryContainer = EspaciosPalette.Navy,
+    primaryContainer = LightPalette.SkyCard,
+    onPrimaryContainer = LightPalette.Navy,
 
-    secondary = EspaciosPalette.Steel,
+    secondary = LightPalette.Steel,
     onSecondary = Color.White,
-    secondaryContainer = EspaciosPalette.Beige,
-    onSecondaryContainer = EspaciosPalette.Navy,
+    secondaryContainer = LightPalette.Beige,
+    onSecondaryContainer = LightPalette.Navy,
 
-    tertiary = EspaciosPalette.Orange,
-    onTertiary = EspaciosPalette.Navy,
+    tertiary = LightPalette.Orange,
+    onTertiary = LightPalette.Navy,
     tertiaryContainer = Color(0xFFFBE3D3),
     onTertiaryContainer = Color(0xFF5A2A0A),
 
-    background = EspaciosPalette.Cream,
-    onBackground = EspaciosPalette.Navy,
+    background = LightPalette.Cream,
+    onBackground = LightPalette.Navy,
 
-    surface = EspaciosPalette.Cream,
-    onSurface = EspaciosPalette.Navy,
-    surfaceVariant = EspaciosPalette.Beige,
+    surface = LightPalette.Cream,
+    onSurface = LightPalette.Navy,
+    surfaceVariant = LightPalette.Beige,
     onSurfaceVariant = Color(0xFF4A5F70),
-    surfaceTint = EspaciosPalette.Navy,
+    surfaceTint = LightPalette.Navy,
 
     surfaceContainerLowest = Color.White,
     surfaceContainerLow = Color(0xFFFBF8F3),
     surfaceContainer = Color(0xFFF1ECE5),
     surfaceContainerHigh = Color(0xFFEAE4DB),
-    surfaceContainerHighest = EspaciosPalette.Beige,
+    surfaceContainerHighest = LightPalette.Beige,
 
-    outline = EspaciosPalette.Slate,
-    outlineVariant = EspaciosPalette.Beige,
+    outline = LightPalette.Slate,
+    outlineVariant = LightPalette.Beige,
 
-    error = EspaciosPalette.Danger,
+    error = LightPalette.Danger,
     onError = Color.White,
-    errorContainer = EspaciosPalette.DangerSoft,
+    errorContainer = LightPalette.DangerSoft,
     onErrorContainer = Color(0xFF7A1F15)
 )
 
 // ---------- Oscuro ----------
 internal val DarkColorScheme: ColorScheme = darkColorScheme(
     primary = Color(0xFFA9C8E3),
-    onPrimary = EspaciosPalette.Navy,
+    onPrimary = LightPalette.Navy,
     primaryContainer = Color(0xFF24435E),
-    onPrimaryContainer = EspaciosPalette.SkyCard,
+    onPrimaryContainer = LightPalette.SkyCard,
 
     secondary = Color(0xFF9DBFD9),
-    onSecondary = EspaciosPalette.Navy,
+    onSecondary = LightPalette.Navy,
     secondaryContainer = Color(0xFF2E4B62),
     onSecondaryContainer = Color(0xFFDDE7EF),
 
@@ -99,9 +99,9 @@ data class ExtendedColors(
 )
 
 internal val LightExtendedColors = ExtendedColors(
-    success = EspaciosPalette.Green,
+    success = LightPalette.Green,
     onSuccess = Color.White,
-    successContainer = EspaciosPalette.GreenSoft,
+    successContainer = LightPalette.GreenSoft,
     onSuccessContainer = Color(0xFF1B5E3A)
 )
 
@@ -109,7 +109,7 @@ internal val DarkExtendedColors = ExtendedColors(
     success = Color(0xFF8FD9AE),
     onSuccess = Color(0xFF00391C),
     successContainer = Color(0xFF1B5E3A),
-    onSuccessContainer = EspaciosPalette.GreenSoft
+    onSuccessContainer = LightPalette.GreenSoft
 )
 
 internal val LocalExtendedColors = staticCompositionLocalOf { LightExtendedColors }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gaja_prueba1.ui.theme.EspaciosPalette
+import com.example.gaja_prueba1.ui.theme.ThemeSettings
 import com.example.gaja_prueba1.util.ProfilePhotoStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -136,9 +138,24 @@ fun ProfileScreen(
             ProfileOption("Cambiar contraseña", Icons.Filled.Lock, onChangePassword)
             ProfileOption("Notificaciones", Icons.Filled.Notifications, onNotifications)
             ProfileOption("Ayuda y soporte", Icons.Filled.Info, onHelp)
+            DarkModeOption()
             ProfileOption("Cerrar sesión", Icons.Filled.Logout, onLogout)
         }
     }
+}
+
+/** Interruptor de modo oscuro: el cambio se aplica al tiro y queda guardado. */
+@Composable
+private fun DarkModeOption() {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(Icons.Filled.DarkMode, contentDescription = null, tint = EspaciosPalette.Navy, modifier = Modifier.size(18.dp))
+        Text("Modo oscuro", modifier = Modifier.weight(1f).padding(start = 10.dp), color = EspaciosPalette.Slate, fontSize = 13.sp)
+        Switch(checked = ThemeSettings.isDark, onCheckedChange = ThemeSettings::chooseDark)
+    }
+    HorizontalDivider(color = EspaciosPalette.Beige.copy(alpha = 0.65f), thickness = 0.5.dp)
 }
 
 @Composable

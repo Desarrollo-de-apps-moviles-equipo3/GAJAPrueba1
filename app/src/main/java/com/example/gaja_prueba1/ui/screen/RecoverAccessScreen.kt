@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,6 +50,7 @@ import androidx.compose.material.icons.filled.Error
 @Composable
 fun RecoverAccessScreen(
     onBack: () -> Unit,
+    onHaveCode: () -> Unit = {},
     viewModel: RecoverAccessViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -56,7 +58,8 @@ fun RecoverAccessScreen(
         state = state,
         onIdentifierChange = viewModel::onIdentifierChange,
         onSubmit = viewModel::onSubmit,
-        onBack = onBack
+        onBack = onBack,
+        onHaveCode = onHaveCode
     )
 }
 
@@ -65,7 +68,8 @@ fun RecoverAccessContent(
     state: RecoverAccessUiState,
     onIdentifierChange: (String) -> Unit,
     onSubmit: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onHaveCode: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -93,7 +97,7 @@ fun RecoverAccessContent(
         )
         Spacer(Modifier.height(10.dp))
         Text(
-            text = "Ingresa tu usuario o correo institucional y te enviaremos las instrucciones para crear una nueva contraseña.",
+            text = "Ingresa tu correo y te enviaremos un código para crear una nueva contraseña.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodyMedium
         )
@@ -104,6 +108,11 @@ fun RecoverAccessContent(
             SentMessage(onBack = onBack)
         } else {
             RecoverForm(state, onIdentifierChange, onSubmit)
+        }
+
+        Spacer(Modifier.height(12.dp))
+        TextButton(onClick = onHaveCode, modifier = Modifier.fillMaxWidth()) {
+            Text("Ya tengo mi código")
         }
     }
 }
@@ -195,7 +204,7 @@ private fun SentMessage(onBack: () -> Unit) {
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
         )
         Text(
-            text = "Si el usuario existe, te enviamos las instrucciones. Puede tardar unos minutos.",
+            text = "Si el correo está registrado, te enviamos un código. Puede tardar unos minutos. Con ese código cambias tu contraseña en \"Ya tengo mi código\".",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center

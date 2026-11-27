@@ -30,6 +30,8 @@ import androidx.lifecycle.lifecycleScope
 import com.example.gaja_prueba1.data.AppDatabase
 import com.example.gaja_prueba1.data.SessionEntity
 import com.example.gaja_prueba1.data.remote.AuthSession
+import com.example.gaja_prueba1.model.SessionRemote
+import com.example.gaja_prueba1.ui.screen.ResetPasswordScreen
 import com.example.gaja_prueba1.model.SessionRepository
 import com.example.gaja_prueba1.ui.screen.BottomTab
 import com.example.gaja_prueba1.ui.screen.ComingSoonScreen
@@ -100,6 +102,10 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf(false)
                 }
 
+                var showReset by remember {
+                    mutableStateOf(false)
+                }
+
                 // Comprueba si hay una sesión guardada.
                 LaunchedEffect(Unit) {
                     activeSession = try {
@@ -119,6 +125,12 @@ class MainActivity : ComponentActivity() {
                     }
 
                     isCheckingSession = false
+
+                    // Con la sesión vigente, se pide un token nuevo para que no venza mientras se usa la app.
+                    // Si el servidor dice que la sesión ya no sirve, el interceptor vuelve al login solo.
+                    if (activeSession != null) {
+                        lifecycleScope.launch { SessionRemote.renew() }
+                    }
                 }
 
                 // Si un servicio rechaza el token (venció o es inválido), se vuelve al login.
@@ -168,9 +180,23 @@ class MainActivity : ComponentActivity() {
                                         .padding(innerPadding),
                                     color = MaterialTheme.colorScheme.background
                                 ) {
-                                    if (showRecover) {
+                                    if (showReset) {
+                                        ResetPasswordScreen(
+                                            onBack = { showReset = false },
+                                            onDone = {
+                                                showReset = false
+                                                showRecover = false
+                                                Toast.makeText(
+                                                    applicationContext,
+                                                    "Listo. Inicia sesión con tu contraseña nueva.",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                        )
+                                    } else if (showRecover) {
                                         RecoverAccessScreen(
-                                            onBack = { showRecover = false }
+                                            onBack = { showRecover = false },
+                                            onHaveCode = { showReset = true }
                                         )
                                     } else if (showRegister) {
                                         RegisterProfileScreen(
@@ -209,6 +235,8 @@ class MainActivity : ComponentActivity() {
                             val onLogout: () -> Unit = {
                                 lifecycleScope.launch {
                                     try {
+                                        // Primero se le avisa al servidor (con el token aún puesto) y después se borra todo.
+                                        SessionRemote.logout()
                                         sessionRepository.closeSession()
                                         AuthSession.clear()
                                         activeSession = null

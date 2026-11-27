@@ -3,7 +3,7 @@ package com.example.gaja_prueba1.ui.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gaja_prueba1.model.AccessRecoveryRepository
-import com.example.gaja_prueba1.model.FakeAccessRecoveryRepository
+import com.example.gaja_prueba1.model.RemoteAccessRecoveryRepository
 import com.example.gaja_prueba1.model.RecoverAccessResult
 import com.example.gaja_prueba1.model.RecoverAccessValidator
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +21,7 @@ data class RecoverAccessUiState(
 )
 
 class RecoverAccessViewModel : ViewModel() {
-    private val repository: AccessRecoveryRepository = FakeAccessRecoveryRepository()
+    private val repository: AccessRecoveryRepository = RemoteAccessRecoveryRepository()
 
     private val _uiState = MutableStateFlow(RecoverAccessUiState())
     val uiState: StateFlow<RecoverAccessUiState> = _uiState.asStateFlow()

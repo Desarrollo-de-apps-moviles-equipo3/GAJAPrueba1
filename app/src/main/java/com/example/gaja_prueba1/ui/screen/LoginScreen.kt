@@ -37,6 +37,7 @@ import com.example.gaja_prueba1.ui.viewmodels.LoginViewModel
 fun LoginScreen(
     onLoginSuccess: (String) -> Unit = {},
     onForgotPassword: () -> Unit = {},
+    onCreateProfile: () -> Unit = {},
     viewModel: LoginViewModel = viewModel()
 ) {
     val loggedUser by viewModel.loggedUser.collectAsState()
@@ -68,7 +69,8 @@ fun LoginScreen(
         onEmailChange = viewModel::onEmailChange,
         onPasswordChange = viewModel::onPasswordChange,
         onLoginClick = viewModel::onLoginClick,
-        onForgotPasswordClick = onForgotPassword
+        onForgotPasswordClick = onForgotPassword,
+        onCreateProfileClick = onCreateProfile
     )
 }
 
@@ -84,7 +86,8 @@ private fun LoginForm(
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onLoginClick: () -> Unit,
-    onForgotPasswordClick: () -> Unit = {}
+    onForgotPasswordClick: () -> Unit = {},
+    onCreateProfileClick: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -184,6 +187,16 @@ private fun LoginForm(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { onForgotPasswordClick() }
+        )
+
+        Text(
+            text = "¿No tienes perfil? Crear perfil",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onCreateProfileClick() }
         )
     }
 }

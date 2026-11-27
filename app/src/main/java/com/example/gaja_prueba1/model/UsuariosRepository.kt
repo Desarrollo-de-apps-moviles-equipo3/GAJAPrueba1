@@ -120,6 +120,30 @@ class RemoteUsuariosRepository(
         ).toUsuario()
     }
 
+    /**
+     * Solicitud pública de perfil ("Crear perfil" en el inicio de sesión).
+     * El perfil queda PENDIENTE hasta que el administrador lo apruebe.
+     */
+    suspend fun register(
+        nombre: String,
+        email: String,
+        password: String,
+        rol: String,
+        telefono: String,
+        institucion: String
+    ): Usuario = call {
+        api.registrar(
+            RegistroRequestDto(
+                email = email.trim(),
+                password = password,
+                nombre = nombre.trim(),
+                rol = rol,
+                telefono = telefono.trim().ifBlank { null },
+                institucion = institucion.trim().ifBlank { null }
+            )
+        ).toUsuario()
+    }
+
     override suspend fun update(
         id: Long,
         nombre: String,

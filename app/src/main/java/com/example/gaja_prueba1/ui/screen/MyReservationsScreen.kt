@@ -105,6 +105,31 @@ fun MyReservationsScreen(
         return
     }
 
+    reservationDetail?.let { reservation ->
+        val detalleEstado = reservationDetailStatus(reservation)
+        val estado = reservation.estado.uppercase(Locale.ROOT)
+        val late = detalleEstado.label == "Fuera de plazo"
+        val chip = when {
+            late && estado == "PENDIENTE" -> "Pendiente"
+            late -> "Confirmada"
+            else -> detalleEstado.label
+        }
+        ReservationDetailScreen(
+            reservation = reservation,
+            statusLabel = chip,
+            notice = detalleEstado.message,
+            cancelEnabled = !late,
+            showCancel = (estado == "PENDIENTE" || estado == "APROBADA") && detalleEstado.label != "Pasada",
+            reservedBy = displayNameFromEmail(reservation.usuarioEmail),
+            onBack = { reservationDetail = null },
+            onCancel = {
+                reservationToCancel = reservation
+                reservationDetail = null
+            }
+        )
+        return
+    }
+
     val today = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(Date())
 
     val pendientes = reservations.filter {
@@ -412,39 +437,7 @@ fun MyReservationsScreen(
         )
     }
 
-    reservationDetail?.let { reservation ->
-        val detalleEstado = reservationDetailStatus(reservation)
-
-        AlertDialog(
-            onDismissRequest = { reservationDetail = null },
-            title = { Text(reservation.espacio) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Fecha: ${formatDate(reservation.fecha)}")
-                    Text("Horario: ${reservation.horario}")
-                    Text("Estado: ${detalleEstado.label}")
-                    detalleEstado.message?.let { Text(it) }
-                    Text("Motivo de la reserva: ${reservation.motivo}")
-
-                    if (reservation.estado.equals("RECHAZADA", ignoreCase = true)) {
-                        Text(
-                            text = "Motivo del rechazo: " +
-                                    (reservation.motivoRechazo?.takeIf { it.isNotBlank() } ?: "Sin motivo"),
-                            color = EspaciosPalette.Danger,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { reservationDetail = null }) {
-                    Text("Cerrar")
-                }
-            }
-        )
-    }
 }
-
 @Composable
 private fun ReservationCard(
     reservation: ReservationResponse,
@@ -642,7 +635,7 @@ private fun reservationDetailStatus(
         if (nowMillis >= inicio - 2 * 60 * 60 * 1000L) {
             return ReservationDetailStatus(
                 "Fuera de plazo",
-                "El plazo para cancelar termina dos horas antes del inicio."
+                "Faltan menos de 2 horas: ya no puedes cancelar esta reserva."
             )
         }
     }
@@ -663,3 +656,13 @@ private fun parseReservationTime(fecha: String, hora: String): Long? {
         null
     }
 }
+
+
+/** "valentina.diaz@escuelamilitar.cl" → "Valentina Diaz". */
+private fun displayNameFromEmail(email: String): String =
+    email.substringBefore("@")
+        .replace("_", " ")
+        .replace(".", " ")
+        .split(" ")
+        .filter { it.isNotBlank() }
+        .joinToString(" ") { part -> part.replaceFirstChar { it.uppercase() } }

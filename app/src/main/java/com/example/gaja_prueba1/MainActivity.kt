@@ -42,6 +42,7 @@ import com.example.gaja_prueba1.ui.theme.SharedPrefsThemeStorage
 import com.example.gaja_prueba1.ui.theme.ThemeSettings
 import kotlinx.coroutines.launch
 import com.example.gaja_prueba1.ui.screen.RecoverAccessScreen
+import com.example.gaja_prueba1.ui.screen.RegisterProfileScreen
 import com.example.gaja_prueba1.ui.screen.AdminShell
 
 class MainActivity : ComponentActivity() {
@@ -90,6 +91,10 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf(false)
                 }
 
+                var showRegister by remember {
+                    mutableStateOf(false)
+                }
+
                 // Comprueba si hay una sesión guardada.
                 LaunchedEffect(Unit) {
                     activeSession = try {
@@ -135,6 +140,10 @@ class MainActivity : ComponentActivity() {
                                         RecoverAccessScreen(
                                             onBack = { showRecover = false }
                                         )
+                                    } else if (showRegister) {
+                                        RegisterProfileScreen(
+                                            onBack = { showRegister = false }
+                                        )
                                     } else {
                                         LoginScreen(
                                             onLoginSuccess = {
@@ -143,7 +152,8 @@ class MainActivity : ComponentActivity() {
                                                         sessionRepository.currentSession()
                                                 }
                                             },
-                                            onForgotPassword = { showRecover = true }
+                                            onForgotPassword = { showRecover = true },
+                                            onCreateProfile = { showRegister = true }
                                         )
                                     }
                                 }

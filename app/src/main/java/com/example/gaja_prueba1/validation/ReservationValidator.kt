@@ -73,7 +73,7 @@ object ReservationValidator {
     ): String =
         SimpleDateFormat(pattern, Locale("es", "CL")).format(millis)
 
-        fun startOfDay(millis: Long): Calendar =
+    fun startOfDay(millis: Long): Calendar =
         Calendar.getInstance().apply {
             timeInMillis = millis
             set(Calendar.HOUR_OF_DAY, 0)

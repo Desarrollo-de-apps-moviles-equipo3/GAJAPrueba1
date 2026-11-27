@@ -18,9 +18,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gaja_prueba1.ui.screen.admin.*
 import com.example.gaja_prueba1.ui.theme.EspaciosPalette
 import com.example.gaja_prueba1.ui.theme.LightPalette
+import com.example.gaja_prueba1.ui.viewmodels.AdminReservationsViewModel
 import kotlinx.coroutines.launch
 
 /** Pestañas de la barra inferior del administrador (según el Figma). */
@@ -44,6 +46,11 @@ fun AdminShell(
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    // Mismo ViewModel que usa la pantalla Reservas: el número del globo es el real.
+    val reservasVm: AdminReservationsViewModel = viewModel()
+    val reservasState by reservasVm.uiState.collectAsState()
+    val pendientes = reservasState.pendingCount
 
     fun openDestination(name: String) {
         menuDestination = name
@@ -124,9 +131,10 @@ fun AdminShell(
                                 if (tab == AdminTab.Mas) scope.launch { drawerState.open() }
                             },
                             icon = {
-                                if (tab == AdminTab.Reservas) {
-                                    // El número saldrá del servicio más adelante.
-                                    BadgedBox(badge = { Badge { Text("3") } }) {
+                                if (tab == AdminTab.Reservas && pendientes > 0) {
+                                    BadgedBox(badge = {
+                                        Badge { Text(if (pendientes > 99) "99+" else pendientes.toString()) }
+                                    }) {
                                         Icon(tab.icon, contentDescription = tab.label)
                                     }
                                 } else {

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +32,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -64,6 +67,7 @@ private data class ReservationDetailStatus(
     val message: String? = null
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyReservationsScreen(
     email: String,
@@ -307,83 +311,92 @@ fun MyReservationsScreen(
             }
         }
 
-        when {
-            state.isLoading -> {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    CircularProgressIndicator()
-                    Text(
-                        text = "Cargando tus reservas…",
-                        modifier = Modifier.padding(top = 12.dp),
-                        color = EspaciosPalette.Slate
-                    )
-                }
-            }
-
-            state.error != null && reservations.isEmpty() -> OfflineErrorScreen(
-                message = state.error.orEmpty(),
-                onRetry = { viewModel.loadReservations(email) },
-                modifier = Modifier.weight(1f)
-            )
-
-            visibleReservations.isEmpty() -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(bottom = 24.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.CalendarMonth,
-                        contentDescription = null,
-                        tint = EspaciosPalette.Slate,
-                        modifier = Modifier.size(44.dp)
-                    )
-                    Text(
-                        text = when (selectedTab) {
-                            ReservationTab.PENDIENTES ->
-                                "No tienes solicitudes pendientes"
-                            ReservationTab.PROXIMAS ->
-                                "No tienes reservas próximas"
-                            ReservationTab.PASADAS ->
-                                "No tienes reservas pasadas"
-                            ReservationTab.CANCELADAS ->
-                                "No tienes reservas canceladas"
-                        },
-                        modifier = Modifier.padding(top = 12.dp),
-                        color = EspaciosPalette.Navy,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = "Tus reservas aparecerán aquí.",
-                        modifier = Modifier.padding(top = 6.dp),
-                        color = EspaciosPalette.Slate,
-                        fontSize = 12.sp
-                    )
-                }
-            }
-
-            else -> {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(
-                        items = visibleReservations,
-                        key = { reservation -> reservation.id }
-                    ) { reservation ->
-                        ReservationCard(
-                            reservation = reservation,
-                            isPast = selectedTab == ReservationTab.PASADAS,
-                            onCancelClick = { reservationToCancel = reservation },
-                            canHide = canHideReservation(reservation),
-                            isHiding = state.hidingReservationId == reservation.id,
-                            onHideClick = { reservationToHide = reservation },
-                            onClick = { reservationDetail = reservation }
+        // Tirar hacia abajo vuelve a pedir tus reservas.
+        PullToRefreshBox(
+            isRefreshing = state.isLoading && reservations.isNotEmpty(),
+            onRefresh = { viewModel.loadReservations(email) },
+            modifier = Modifier.weight(1f).fillMaxWidth()
+        ) {
+            when {
+                state.isLoading && reservations.isEmpty() -> {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator()
+                        Text(
+                            text = "Cargando tus reservas…",
+                            modifier = Modifier.padding(top = 12.dp),
+                            color = EspaciosPalette.Slate
                         )
+                    }
+                }
+
+                state.error != null && reservations.isEmpty() -> OfflineErrorScreen(
+                    message = state.error.orEmpty(),
+                    onRetry = { viewModel.loadReservations(email) },
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                visibleReservations.isEmpty() -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(bottom = 24.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.CalendarMonth,
+                            contentDescription = null,
+                            tint = EspaciosPalette.Slate,
+                            modifier = Modifier.size(44.dp)
+                        )
+                        Text(
+                            text = when (selectedTab) {
+                                ReservationTab.PENDIENTES ->
+                                    "No tienes solicitudes pendientes"
+                                ReservationTab.PROXIMAS ->
+                                    "No tienes reservas próximas"
+                                ReservationTab.PASADAS ->
+                                    "No tienes reservas pasadas"
+                                ReservationTab.CANCELADAS ->
+                                    "No tienes reservas canceladas"
+                            },
+                            modifier = Modifier.padding(top = 12.dp),
+                            color = EspaciosPalette.Navy,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "Tus reservas aparecerán aquí.",
+                            modifier = Modifier.padding(top = 6.dp),
+                            color = EspaciosPalette.Slate,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(
+                            items = visibleReservations,
+                            key = { reservation -> reservation.id }
+                        ) { reservation ->
+                            ReservationCard(
+                                reservation = reservation,
+                                isPast = selectedTab == ReservationTab.PASADAS,
+                                onCancelClick = { reservationToCancel = reservation },
+                                canHide = canHideReservation(reservation),
+                                isHiding = state.hidingReservationId == reservation.id,
+                                onHideClick = { reservationToHide = reservation },
+                                onClick = { reservationDetail = reservation }
+                            )
+                        }
                     }
                 }
             }

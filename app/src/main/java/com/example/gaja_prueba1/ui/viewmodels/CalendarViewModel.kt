@@ -34,6 +34,8 @@ data class DayEditorState(
 
 data class CalendarUiState(
     val isLoading: Boolean = true,
+    /** Recarga hecha al tirar hacia abajo, con datos ya en pantalla. */
+    val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
     val spaces: List<Space> = emptyList(),
     val blocks: List<BloqueoDto> = emptyList(),
@@ -69,7 +71,12 @@ open class CalendarViewModel(
     fun refresh() {
         viewModelScope.launch {
             _uiState.update {
-                it.copy(isLoading = it.spaces.isEmpty(), errorMessage = null, nowMillis = System.currentTimeMillis())
+                it.copy(
+                    isLoading = it.spaces.isEmpty(),
+                    isRefreshing = it.spaces.isNotEmpty(),
+                    errorMessage = null,
+                    nowMillis = System.currentTimeMillis()
+                )
             }
             try {
                 // Espacios y bloqueos vienen del servicio de espacios; las reservas, del de reservas.
@@ -84,6 +91,7 @@ open class CalendarViewModel(
                         ?.takeIf { id -> spaces.any { it.id == id && it.available } }
                     state.copy(
                         isLoading = false,
+                        isRefreshing = false,
                         spaces = spaces,
                         blocks = blocks,
                         reservations = bookings,
@@ -95,7 +103,11 @@ open class CalendarViewModel(
             } catch (e: Exception) {
                 android.util.Log.e("GAJA_ESPACIOS", "No se pudo cargar el calendario", e)
                 _uiState.update {
-                    it.copy(isLoading = false, errorMessage = "No pudimos cargar la disponibilidad. Inténtalo de nuevo.")
+                    it.copy(
+                        isLoading = false,
+                        isRefreshing = false,
+                        errorMessage = "No pudimos cargar la disponibilidad. Inténtalo de nuevo."
+                    )
                 }
             }
         }

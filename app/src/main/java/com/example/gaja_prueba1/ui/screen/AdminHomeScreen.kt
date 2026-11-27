@@ -21,7 +21,9 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,6 +50,7 @@ import com.example.gaja_prueba1.ui.viewmodels.AdminHomeViewModel
  * "Pendientes" y accesos rápidos.
  * Los contadores de perfiles y ayuda salen como "—" hasta que existan esos servicios.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminHomeScreen(
     userName: String,
@@ -65,8 +68,14 @@ fun AdminHomeScreen(
 
     val summary = state.summary
 
+    // Tirar hacia abajo vuelve a pedir el resumen.
+    PullToRefreshBox(
+        isRefreshing = state.isLoading && summary != null,
+        onRefresh = viewModel::load,
+        modifier = modifier.fillMaxSize()
+    ) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp, vertical = 16.dp),
@@ -165,6 +174,7 @@ fun AdminHomeScreen(
             QuickAccess("Crear usuario", Icons.Filled.Add, onCreateUser, Modifier.weight(1f))
             QuickAccess("Reportes", Icons.Filled.DateRange, onReports, Modifier.weight(1f))
         }
+    }
     }
 }
 

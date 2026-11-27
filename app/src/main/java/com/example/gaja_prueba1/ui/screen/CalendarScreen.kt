@@ -25,12 +25,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -91,6 +93,7 @@ fun CalendarScreen(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarContent(
     state: CalendarUiState,
@@ -106,11 +109,18 @@ fun CalendarContent(
     // Solo la agenda del admin lo usa: al tocar un día se abre su edición.
     onDayClick: ((String) -> Unit)? = null
 ) {
-    Column(
+    // Tirar hacia abajo vuelve a pedir espacios, bloqueos y reservas.
+    PullToRefreshBox(
+        isRefreshing = state.isRefreshing,
+        onRefresh = onRetry,
         modifier = modifier
             .fillMaxSize()
             .background(EspaciosPalette.Cream)
             .statusBarsPadding()
+    ) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -187,6 +197,7 @@ fun CalendarContent(
                 }
             }
         }
+    }
     }
 }
 

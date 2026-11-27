@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
@@ -39,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -136,6 +138,7 @@ fun AdminReservationsScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ReservationsListView(
     tab: ReservationsTab,
@@ -209,39 +212,49 @@ private fun ReservationsListView(
             }
         }
 
-        when {
-            isLoading && filteredItems.isEmpty() -> Box(Modifier.fillMaxSize(), Alignment.Center) {
-                CircularProgressIndicator()
-            }
+        // Tirar hacia abajo recarga las listas (también funciona con la lista vacía).
+        PullToRefreshBox(
+            isRefreshing = isLoading && filteredItems.isNotEmpty(),
+            onRefresh = onRetry,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            when {
+                isLoading && filteredItems.isEmpty() -> Box(Modifier.fillMaxSize(), Alignment.Center) {
+                    CircularProgressIndicator()
+                }
 
-            errorMessage != null -> Column(
-                Modifier.fillMaxSize().padding(24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(errorMessage, textAlign = TextAlign.Center)
-                Spacer(Modifier.height(16.dp))
-                OutlinedButton(onClick = onRetry) { Text("Reintentar") }
-            }
+                errorMessage != null -> Column(
+                    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(errorMessage, textAlign = TextAlign.Center)
+                    Spacer(Modifier.height(16.dp))
+                    OutlinedButton(onClick = onRetry) { Text("Reintentar") }
+                }
 
-            filteredItems.isEmpty() -> Box(Modifier.fillMaxSize(), Alignment.Center) {
-                Text(if (tab == ReservationsTab.Historial) "No hay registros que coincidan con la búsqueda" else "No hay reservas ${tab.label.lowercase()}")
-            }
+                filteredItems.isEmpty() -> Box(
+                    Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                    Alignment.Center
+                ) {
+                    Text(if (tab == ReservationsTab.Historial) "No hay registros que coincidan con la búsqueda" else "No hay reservas ${tab.label.lowercase()}")
+                }
 
-            else -> LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(filteredItems, key = { it.id }) { reservation ->
-                    GajaCard(modifier = Modifier.fillMaxWidth(), onClick = { onOpen(reservation) }) {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(reservation.space, fontWeight = FontWeight.SemiBold)
-                            Text("${reservation.date} · ${reservation.slot}")
-                            Text(reservation.userEmail, style = MaterialTheme.typography.bodySmall)
-                            Text("Estado: ${reservation.status.etiqueta}", style = MaterialTheme.typography.bodySmall)
-                            if (reservation.hiddenForUser) {
-                                Text("Oculta para el usuario · registro conservado", style = MaterialTheme.typography.bodySmall)
+                else -> LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(filteredItems, key = { it.id }) { reservation ->
+                        GajaCard(modifier = Modifier.fillMaxWidth(), onClick = { onOpen(reservation) }) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(reservation.space, fontWeight = FontWeight.SemiBold)
+                                Text("${reservation.date} · ${reservation.slot}")
+                                Text(reservation.userEmail, style = MaterialTheme.typography.bodySmall)
+                                Text("Estado: ${reservation.status.etiqueta}", style = MaterialTheme.typography.bodySmall)
+                                if (reservation.hiddenForUser) {
+                                    Text("Oculta para el usuario · registro conservado", style = MaterialTheme.typography.bodySmall)
+                                }
                             }
                         }
                     }

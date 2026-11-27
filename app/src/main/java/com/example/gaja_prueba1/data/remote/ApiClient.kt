@@ -15,11 +15,11 @@ import java.util.concurrent.TimeUnit
  * Puertos acordados: usuarios 8081, espacios 8082, reservas 8083.
  */
 object ApiConfig {
-    private const val HOST = "http://10.0.2.2"
-
-    const val USUARIOS_URL = "$HOST:8081/"
-    const val ESPACIOS_URL = "$HOST:8082/"
-    const val RESERVAS_URL = "$HOST:8083/"
+    // Servicios desplegados en Render (plan gratuito: la primera petición tras
+    // un rato sin uso puede tardar cerca de 1 minuto).
+    const val USUARIOS_URL = "https://gaja-usuarios.onrender.com/"
+    const val ESPACIOS_URL = "https://gaja-espacios.onrender.com/"
+    const val RESERVAS_URL = "https://gaja-reservas.onrender.com/"
 
     // API externa del clima (Open-Meteo): usa HTTPS.
     const val CLIMA_URL = "https://api.open-meteo.com/"
@@ -33,8 +33,9 @@ object ApiClient {
             level = HttpLoggingInterceptor.Level.BASIC
         }
         OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
+            .connectTimeout(90, TimeUnit.SECONDS)
+            .readTimeout(90, TimeUnit.SECONDS)
+            .writeTimeout(90, TimeUnit.SECONDS)
             .addInterceptor(logging)
             .build()
     }

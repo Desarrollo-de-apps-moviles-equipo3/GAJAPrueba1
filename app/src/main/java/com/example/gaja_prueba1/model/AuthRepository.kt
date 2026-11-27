@@ -2,6 +2,7 @@ package com.example.gaja_prueba1.model
 
 import com.example.gaja_prueba1.data.remote.ApiClient
 import com.example.gaja_prueba1.data.remote.ApiConfig
+import com.example.gaja_prueba1.data.remote.AuthSession
 import com.example.gaja_prueba1.data.remote.LoginRequestDto
 import com.example.gaja_prueba1.data.remote.UsuariosApi
 import com.google.gson.JsonParser
@@ -29,6 +30,8 @@ class AuthRepository(
             val normalizedEmail = email.trim().lowercase()
 
             val response = api.login(LoginRequestDto(normalizedEmail, password))
+            // Desde aquí, todas las peticiones a los servicios llevan este token.
+            AuthSession.save(response.token)
             LoginResult.Success(
                 token = response.token,
                 userId = response.email,

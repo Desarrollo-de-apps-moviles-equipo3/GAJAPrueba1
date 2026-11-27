@@ -1,6 +1,7 @@
 package com.example.gaja_prueba1
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.SystemBarStyle
@@ -28,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import com.example.gaja_prueba1.data.AppDatabase
 import com.example.gaja_prueba1.data.SessionEntity
+import com.example.gaja_prueba1.data.remote.AuthSession
 import com.example.gaja_prueba1.model.SessionRepository
 import com.example.gaja_prueba1.ui.screen.BottomTab
 import com.example.gaja_prueba1.ui.screen.ComingSoonScreen
@@ -62,6 +64,9 @@ class MainActivity : ComponentActivity() {
 
         // El modo claro/oscuro se lee antes de dibujar para que la app no parpadee al abrir.
         ThemeSettings.init(SharedPrefsThemeStorage(applicationContext))
+
+        // Recupera el token guardado del último inicio de sesión.
+        AuthSession.init(applicationContext)
 
         setContent {
             val dark = ThemeSettings.isDark
@@ -103,7 +108,34 @@ class MainActivity : ComponentActivity() {
                         null
                     }
 
+                    // Una sesión guardada sin token (de antes de la seguridad) ya no sirve: hay que entrar de nuevo.
+                    if (activeSession != null && AuthSession.token() == null) {
+                        try {
+                            sessionRepository.closeSession()
+                        } catch (exception: Exception) {
+                            android.util.Log.e("GAJA_SESSION", "Error al cerrar la sesión", exception)
+                        }
+                        activeSession = null
+                    }
+
                     isCheckingSession = false
+                }
+
+                // Si un servicio rechaza el token (venció o es inválido), se vuelve al login.
+                LaunchedEffect(Unit) {
+                    AuthSession.expired.collect {
+                        try {
+                            sessionRepository.closeSession()
+                        } catch (exception: Exception) {
+                            android.util.Log.e("GAJA_SESSION", "Error al cerrar la sesión", exception)
+                        }
+                        activeSession = null
+                        Toast.makeText(
+                            applicationContext,
+                            "Tu sesión venció. Inicia sesión de nuevo.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
                 }
 
                 if (isCheckingSession) {
@@ -178,6 +210,7 @@ class MainActivity : ComponentActivity() {
                                 lifecycleScope.launch {
                                     try {
                                         sessionRepository.closeSession()
+                                        AuthSession.clear()
                                         activeSession = null
                                     } catch (exception: Exception) {
                                         android.util.Log.e(

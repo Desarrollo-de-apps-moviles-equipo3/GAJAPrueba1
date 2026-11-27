@@ -23,6 +23,10 @@ object ApiConfig {
 
     // API externa del clima (Open-Meteo): usa HTTPS.
     const val CLIMA_URL = "https://api.open-meteo.com/"
+
+    /** true si la dirección es de uno de NUESTROS servicios (solo a esos se les manda el token). */
+    fun isOwnService(url: String): Boolean =
+        listOf(USUARIOS_URL, ESPACIOS_URL, RESERVAS_URL).any { url.startsWith(it) }
 }
 
 /** Crea los clientes Retrofit. Cada servicio usa su propia dirección base. */
@@ -36,6 +40,7 @@ object ApiClient {
             .connectTimeout(90, TimeUnit.SECONDS)
             .readTimeout(90, TimeUnit.SECONDS)
             .writeTimeout(90, TimeUnit.SECONDS)
+            .addInterceptor(AuthTokenInterceptor())
             .addInterceptor(logging)
             .build()
     }
